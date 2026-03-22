@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#080808"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>IronLens</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --red:#ff2b2b;--red2:rgba(255,43,43,0.1);
+  --bg:#080808;--bg2:#101010;--bg3:#181818;--bg4:#222;
+  --b1:#1c1c1c;--b2:#2a2a2a;
+  --t1:#f2efe9;--t2:#888;--t3:#444;
+  --green:#22c55e;--green2:rgba(34,197,94,0.1);
+  --amber:#f59e0b;--amber2:rgba(245,158,11,0.1);
+  --blue:#3b82f6;--blue2:rgba(59,130,246,0.1);
+}
+html,body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;height:100%;overflow:hidden;}
+.shell{height:100dvh;display:flex;flex-direction:column;max-width:480px;margin:0 auto;background:var(--bg);position:relative;overflow:hidden;}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transform:translateY(20px);transition:opacity 0.28s ease,transform 0.28s ease;will-change:opacity,transform;}
+.screen.active{opacity:1;pointer-events:all;transform:translateY(0);}#screen-loading.active{display:flex;}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(90px + env(safe-area-inset-bottom));overscroll-behavior:contain;}
+.scroll::-webkit-scrollbar{display:none;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 12px) 20px 12px;flex-shrink:0;}
+.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:900;letter-spacing:-0.5px;}
+.logo em{color:var(--red);font-style:normal;}
+.back-btn{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--t2);cursor:pointer;padding:6px 0;}
+.back-btn svg{width:16px;height:16px;stroke:var(--t2);fill:none;stroke-width:2;stroke-linecap:round;}
+
+/* BOTTOM NAV */
+.bnav{position:absolute;bottom:0;left:0;right:0;background:rgba(8,8,8,0.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--b1);display:flex;align-items:center;justify-content:space-around;padding:8px 0;padding-bottom:calc(8px + env(safe-area-inset-bottom));z-index:50;}
+.bi{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 16px;cursor:pointer;flex:1;}
+.bi svg{width:20px;height:20px;stroke:var(--t3);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:stroke 0.15s;}
+.bi span{font-size:10px;color:var(--t3);font-weight:500;transition:color 0.15s;}
+.bi.on svg{stroke:var(--red);}
+.bi.on span{color:var(--red);}
+
+/* INPUTS */
+.inp{background:var(--bg3);border:1px solid var(--b1);border-radius:12px;padding:14px 16px;font-size:16px;font-weight:500;color:var(--t1);font-family:'DM Sans',sans-serif;width:100%;transition:border-color 0.15s;-webkit-appearance:none;appearance:none;}
+.inp:focus{outline:none;border-color:var(--red);}
+.inp::placeholder{color:var(--t3);}
+.inp-label{font-size:12px;color:var(--t2);margin-bottom:6px;display:block;}
+
+/* CHOICE CARDS */
+.choice-grid{display:grid;gap:8px;}
+.choice-grid.cols2{grid-template-columns:1fr 1fr;}
+.choice{padding:14px;border-radius:14px;border:1px solid var(--b2);background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;transition:all 0.15s;width:100%;-webkit-tap-highlight-color:transparent;}
+.choice .c-icon{font-size:24px;display:block;margin-bottom:8px;}
+.choice .c-t{font-size:14px;font-weight:500;color:var(--t1);display:block;margin-bottom:2px;}
+.choice .c-d{font-size:12px;color:var(--t3);display:block;line-height:1.4;}
+.choice.sel{background:var(--red2);border-color:var(--red);}
+.choice.sel .c-t{color:var(--red);}
+
+/* BIG BTN */
+.bigbtn{width:100%;padding:16px;border-radius:14px;background:var(--red);color:#fff;border:none;font-size:16px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.bigbtn:active,.bigbtn:focus-visible{transform:scale(0.97);background:#e02020;outline:none;}
+.bigbtn:disabled{background:#2a1212;color:#6a3333;cursor:not-allowed;transform:none;}
+.bigbtn svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;}
+.ghostbtn{width:100%;padding:13px;border-radius:12px;background:transparent;border:1px solid var(--b2);color:var(--t2);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;}
+.ghostbtn:active{background:var(--bg3);}
+
+/* SECTION TITLE */
+.sec-t{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px;}
+.sec-s{font-size:14px;color:var(--t2);line-height:1.5;margin-bottom:20px;}
+
+/* UPLOAD */
+.upload-zone{border:1.5px dashed var(--b2);border-radius:16px;min-height:230px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;background:var(--bg);transition:border-color 0.2s;}
+.upload-zone:active{border-color:var(--red);}
+.upload-zone.filled{border-style:solid;border-color:var(--b1);}
+.up-inner{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 20px;pointer-events:none;}
+.up-icon{width:52px;height:52px;border-radius:14px;background:var(--bg3);display:flex;align-items:center;justify-content:center;}
+.up-icon svg{width:24px;height:24px;stroke:var(--red);fill:none;stroke-width:1.8;stroke-linecap:round;}
+#prev-img{width:100%;height:100%;object-fit:cover;display:none;min-height:230px;border-radius:15px;}
+.prev-badge{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.75);color:#fff;font-size:11px;padding:4px 10px;border-radius:8px;display:none;backdrop-filter:blur(8px);}
+.prev-rm{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:14px;border:none;backdrop-filter:blur(8px);pointer-events:all;}
+.cam-btn{padding:10px 22px;border-radius:10px;background:var(--bg3);border:1px solid var(--b2);color:var(--t2);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:7px;pointer-events:all;}
+.cam-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;}
+
+/* ANGLE PILLS */
+.angle-row{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+.angle-row::-webkit-scrollbar{display:none;}
+.apill{flex-shrink:0;padding:9px 16px;border-radius:20px;border:1px solid var(--b2);background:transparent;color:var(--t3);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;white-space:nowrap;display:flex;align-items:center;gap:5px;}
+.apill.on{background:var(--red2);border-color:var(--red);color:var(--red);}
+.apill.done{background:var(--green2);border-color:var(--green);color:var(--green);}
+.apill .opt{font-size:9px;opacity:0.5;}
+.apill .chk{width:14px;height:14px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;}
+.apill .chk::after{content:'';width:5px;height:5px;border-radius:50%;background:#fff;}
+
+/* LOADING */
+.spinner{width:48px;height:48px;border:3px solid var(--b2);border-top-color:var(--red);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.dots{display:flex;gap:6px;}
+.dots span{width:7px;height:7px;border-radius:50%;background:var(--red);animation:dp 1.2s infinite;}
+.dots span:nth-child(2){animation-delay:0.2s;}
+.dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes dp{0%,80%,100%{opacity:0.2;transform:scale(0.8);}40%{opacity:1;transform:scale(1);}}
+
+/* RESULT COMPONENTS */
+.score-hero{border-radius:18px;padding:22px;margin-bottom:14px;display:flex;align-items:center;gap:16px;overflow:hidden;}
+.score-big{font-family:'Syne',sans-serif;font-size:62px;font-weight:900;line-height:1;flex-shrink:0;}
+.phase-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:20px;font-size:14px;font-weight:600;margin-top:8px;}
+.rcard{background:var(--bg2);border:1px solid var(--b1);border-radius:16px;padding:16px 18px;margin-bottom:12px;overflow:hidden;}
+.rcard-t{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;font-weight:500;margin-bottom:12px;}
+.mrow{display:flex;flex-direction:column;gap:4px;padding:8px 0;border-bottom:1px solid var(--b1);}
+.mrow:last-child{border:none;padding-bottom:0;}
+.mrow-top{display:flex;align-items:center;gap:8px;}
+.mname{font-size:14px;font-weight:500;flex:1;}
+.mbar-bg{width:56px;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;}
+.mbar{height:100%;border-radius:2px;}
+.mbadge{font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600;}
+.mbadge.weak{background:rgba(255,43,43,0.14);color:var(--red);}
+.mbadge.fair{background:rgba(245,158,11,0.14);color:var(--amber);}
+.mbadge.good{background:rgba(34,197,94,0.14);color:var(--green);}
+.mbadge.elite{background:rgba(74,222,128,0.2);color:#4ade80;}
+.macro-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+.macro-card{background:var(--bg3);border-radius:12px;padding:12px;text-align:center;}
+.mc-v{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1;}
+.mc-l{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.5px;margin-top:3px;}
+.mc-s{font-size:10px;color:var(--t3);margin-top:1px;}
+.meal-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--b1);}
+.meal-item:last-child{border:none;padding-bottom:0;}
+.meal-icon{width:36px;height:36px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.meal-name{font-size:13px;font-weight:500;flex:1;}
+.meal-foods{font-size:11px;color:var(--t3);line-height:1.4;margin-top:2px;}
+.meal-p{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--green);}
+.meal-k{font-size:10px;color:var(--t3);}
+.workout-day{padding:11px 0;border-bottom:1px solid var(--b1);}
+.workout-day:last-child{border:none;padding-bottom:0;}
+.wd-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.wd-day{font-size:11px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;width:36px;}
+.wd-focus{font-size:14px;font-weight:500;}
+.wd-tag{font-size:10px;padding:2px 8px;border-radius:5px;background:var(--red2);color:var(--red);font-weight:600;margin-left:auto;}
+.wd-exercises{font-size:12px;color:var(--t3);line-height:1.6;padding-left:46px;}
+.iblock{padding:11px 14px;background:var(--bg3);border-radius:11px;border-left:2px solid var(--red);margin-bottom:8px;}
+.iblock:last-child{margin:0;}
+.iblock.ok{border-color:var(--green);}
+.iblock.warn{border-color:var(--amber);}
+.iblock .it{font-size:13px;font-weight:500;margin-bottom:3px;}
+.iblock .id{font-size:12px;color:var(--t2);line-height:1.55;}
+.honest-box{background:rgba(255,43,43,0.06);border:1px solid rgba(255,43,43,0.18);border-radius:14px;padding:14px 16px;margin-bottom:12px;}
+.hb-title{font-size:13px;font-weight:500;color:var(--red);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.hb-body{font-size:13px;color:var(--t2);line-height:1.65;}
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.wday{padding:8px 3px;background:var(--bg3);border-radius:8px;text-align:center;}
+.wday-n{font-size:9px;color:var(--t3);text-transform:uppercase;margin-bottom:3px;}
+.wday-v{font-size:10px;color:var(--t2);line-height:1.3;}
+.wday.rest .wday-v{color:var(--t3);}
+.wday.active{background:var(--red2);border:1px solid rgba(255,43,43,0.2);}
+.wday.active .wday-v{color:var(--t1);}
+.sup-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--b1);}
+.sup-item:last-child{border:none;padding-bottom:0;}
+.sup-icon{font-size:20px;flex-shrink:0;width:28px;}
+.sup-t{font-size:13px;font-weight:500;margin-bottom:2px;}
+.sup-d{font-size:12px;color:var(--t2);line-height:1.5;}
+.sup-ev{font-size:10px;padding:2px 7px;border-radius:5px;font-weight:600;margin-top:4px;display:inline-block;}
+.ev-high{background:var(--green2);color:var(--green);}
+.ev-mod{background:var(--amber2);color:var(--amber);}
+
+/* HISTORY */
+.hgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 20px;}
+.hcard{background:var(--bg2);border:1px solid var(--b1);border-radius:14px;overflow:hidden;cursor:pointer;}
+.hcard img{width:100%;height:120px;object-fit:cover;display:block;}
+.hcard-body{padding:10px 12px;}
+.hcard-score{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
+.hcard-meta{font-size:11px;color:var(--t3);margin-top:2px;}
+
+/* ONBOARDING */
+.onboard-wrap{padding:0 20px 20px;}
+.progress-bar{height:3px;background:var(--b1);border-radius:2px;margin:0 20px 24px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--red);border-radius:2px;transition:width 0.4s ease;}
+
+/* CAMERA */
+.cam-modal{display:none;position:fixed;inset:0;background:#000;z-index:200;flex-direction:column;align-items:center;}
+.cam-modal.open{display:flex;}
+.cam-top{width:100%;display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top) 20px 12px;padding-top:calc(env(safe-area-inset-top) + 12px);background:rgba(0,0,0,0.5);}
+.cam-top-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#fff;}
+.cam-x{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:16px;border:none;}
+#cam-vid{width:100%;flex:1;object-fit:cover;}
+.cam-btns{width:100%;display:flex;align-items:center;justify-content:space-around;padding:20px 40px;padding-bottom:calc(env(safe-area-inset-bottom) + 20px);background:rgba(0,0,0,0.5);}
+.cam-flip-btn{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;}
+.cam-flip-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;}
+.shutter{width:66px;height:66px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,0.35);cursor:pointer;transition:transform 0.1s;}
+.shutter:active{transform:scale(0.9);}
+#snapc{display:none;}
+
+/* SAMPLE PHOTOS */
+.sample-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.sample-photo{border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color 0.15s;position:relative;}
+.sample-photo:active{border-color:var(--red);}
+.sample-photo img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;}
+.sample-photo .sp-label{position:absolute;bottom:0;left:0;right:0;padding:6px;background:linear-gradient(transparent,rgba(0,0,0,0.85));font-size:10px;color:rgba(255,255,255,0.8);text-align:center;}
+.sample-head{font-size:12px;color:var(--t2);margin-bottom:8px;text-align:center;}
+
+/* WORKOUT TABS */
+.wtabs-scroll{display:flex;gap:6px;overflow-x:auto;padding:0 20px 0;-webkit-overflow-scrolling:touch;margin-bottom:0;}
+.wtabs-scroll::-webkit-scrollbar{display:none;}
+.wtab{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 12px;border-radius:12px;border:1px solid var(--b2);cursor:pointer;transition:all 0.15s;background:transparent;min-width:52px;}
+.wtab.wt-active{background:#1a0808;border-color:var(--red);box-shadow:0 0 0 1px rgba(255,43,43,0.15);}
+.wtab.wt-rest{opacity:0.45;}
+.wtab-day{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.5px;}
+.wtab.wt-active .wtab-day{color:var(--red);}
+.wtab-label{font-size:11px;font-weight:500;color:var(--t2);text-align:center;line-height:1.2;max-width:52px;}
+.wtab.wt-active .wtab-label{color:var(--t1);}
+.wtab-dot{width:5px;height:5px;border-radius:50%;background:var(--b2);}
+.wtab.wt-active .wtab-dot{background:var(--red);}
+/* WORKOUT PANELS */
+.wpanels{position:relative;}
+.wday-panel{display:none;animation:fadeUp 0.25s ease both;}
+.wday-panel.wp-active{display:block;}
+.wday-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 20px 10px;}
+.wday-header-day{font-size:11px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;}
+.wday-header-focus{font-size:17px;font-weight:500;line-height:1.2;}
+.wday-target-tag{flex-shrink:0;font-size:10px;padding:4px 10px;border-radius:8px;background:var(--red2);color:var(--red);font-weight:600;margin-top:3px;max-width:120px;text-align:center;line-height:1.3;}
+.wday-meta{display:flex;gap:8px;padding:0 20px 10px;flex-wrap:wrap;}
+.wday-meta-pill{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--t3);padding:4px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--b1);}
+/* EXERCISE CARDS */
+.ex-card{display:flex;align-items:flex-start;gap:12px;padding:12px 20px;border-top:1px solid var(--b1);transition:background 0.15s;cursor:default;}
+.ex-card:active{background:var(--bg3);}
+.ex-card-left{flex-shrink:0;padding-top:2px;}
+.ex-num-badge{width:24px;height:24px;border-radius:7px;background:var(--bg3);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--t3);}
+.ex-card-body{flex:1;min-width:0;}
+.ex-card-name{font-size:14px;font-weight:500;margin-bottom:3px;line-height:1.2;}
+.ex-card-note{font-size:12px;color:var(--t3);line-height:1.4;}
+.ex-card-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.ex-sets-pill{padding:6px 11px;border-radius:9px;background:var(--bg3);border:1px solid var(--b2);font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;}
+.ex-rest-pill{padding:4px 9px;border-radius:7px;background:var(--blue2);border:1px solid rgba(59,130,246,0.2);font-size:10px;font-weight:500;color:var(--blue);white-space:nowrap;}
+/* HISTORY CARD */
+.hcard{background:var(--bg2);border:1px solid var(--b1);border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;}
+.hcard:active{border-color:var(--red);}
+.hcard img{width:100%;height:120px;object-fit:cover;display:block;}
+.hcard-body{padding:10px 12px;}
+.hcard-score{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
+.hcard-meta{font-size:11px;color:var(--t3);margin-top:1px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.fade-in{animation:fadeUp 0.4s ease both;}
+@media(min-width:481px){.shell{border-left:1px solid var(--b1);border-right:1px solid var(--b1);}}
+
+/* ── POLISH ── */
+/* Smooth haptic-like tap on all interactive elements */
+button,a,[onclick]{-webkit-tap-highlight-color:transparent;}
+button:active{opacity:0.85;}
+/* Prevent text selection on tap */
+.bnav,.topbar,.angle-row,.wtabs-scroll{user-select:none;-webkit-user-select:none;}
+/* Smooth wday panel swap */
+.wday-panel{display:none;animation:fadeUp 0.2s ease both;}
+.wday-panel.wp-active{display:block;}
+/* Better score big on small screens */
+@media(max-width:360px){.score-big{font-size:48px!important;}.rcard{padding:13px 14px;}}
+/* Meal foods text overflow */
+.meal-foods{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+/* Exercise note clamp */
+.ex-card-note{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+/* Week grid responsive */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.wday{padding:7px 2px;background:var(--bg3);border-radius:7px;text-align:center;overflow:hidden;}
+/* Macro card consistent height */
+.macro-card{min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+/* Pull-to-reveal on scroll */
+.scroll{overscroll-behavior-y:contain;}
+/* Topbar border */
+#screen-home .topbar,#screen-history .topbar{border-bottom:1px solid var(--b1);}
+/* Back btn bigger tap target */
+.back-btn{padding:8px 0;min-width:60px;}
+/* rcard-t consistent */
+.rcard-t{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.2px;font-weight:500;margin-bottom:12px;}
+/* History card no orphan text */
+.hcard-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Profile card stat item */
+#profile-display > div{transition:background 0.15s;}
+#profile-display > div:active{background:var(--bg4)!important;}
+/* Scan btn pulse when ready */
+@keyframes btnPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,43,43,0.4);}50%{box-shadow:0 0 0 8px rgba(255,43,43,0);}}
+#scan-btn:not(:disabled){animation:btnPulse 2.5s infinite;}
+/* Smooth angle pill transition */
+.apill{transition:background 0.2s,border-color 0.2s,color 0.2s;}
+/* wtab transition */
+.wtab{transition:background 0.2s,border-color 0.2s;}
+/* Loading screen bg */
+#screen-loading{background:var(--bg);justify-content:center;}
+/* Onboarding progress */
+.progress-fill{transition:width 0.4s cubic-bezier(0.4,0,0.2,1);}
+/* Honest box icon align */
+.hb-title{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--red);margin-bottom:6px;}
+/* Override modal backdrop tap to close */
+#override-modal{cursor:pointer;}
+#override-modal > div{cursor:default;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══ ONBOARDING ═══ -->
+<div class="screen active" id="screen-onboard">
+  <div class="topbar">
+    <div class="logo">Iron<em>Lens</em></div>
+    <div style="font-size:12px;color:var(--t3);" id="ob-step-label">1 of 3</div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="ob-progress" style="width:33%;"></div></div>
+  <div class="scroll">
+    <!-- STEP 1: Stats -->
+    <div id="ob-s1" class="onboard-wrap">
+      <div class="sec-t">Your stats</div>
+      <div class="sec-s">We use these to calculate your exact calorie and protein targets.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div><label class="inp-label">Age</label><input class="inp" id="ob-age" type="number" placeholder="22" min="14" max="80"/></div>
+        <div><label class="inp-label">Weight (kg)</label><input class="inp" id="ob-weight" type="number" placeholder="75" min="30" max="250"/></div>
+        <div><label class="inp-label">Height (cm)</label><input class="inp" id="ob-height" type="number" placeholder="175" min="140" max="220"/></div>
+        <div><label class="inp-label">Sex</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:2px;">
+            <button class="choice sel" style="padding:11px 8px;" data-sex="male" onclick="setSex(this)"><span class="c-t">♂ Male</span></button>
+            <button class="choice" style="padding:11px 8px;" data-sex="female" onclick="setSex(this)"><span class="c-t">♀ Female</span></button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label class="inp-label">Activity level</label>
+        <div class="choice-grid" style="gap:6px;">
+          <button class="choice" style="padding:11px 14px;" data-act="1.2" onclick="setAct(this)"><span style="display:flex;justify-content:space-between;align-items:center;width:100%;"><span class="c-t" style="font-size:13px;">😴 Sedentary</span><span class="c-d">desk job, no gym</span></span></button>
+          <button class="choice sel" style="padding:11px 14px;" data-act="1.375" onclick="setAct(this)"><span style="display:flex;justify-content:space-between;align-items:center;width:100%;"><span class="c-t" style="font-size:13px;">🚶 Lightly active</span><span class="c-d">gym 1–3x/week</span></span></button>
+          <button class="choice" style="padding:11px 14px;" data-act="1.55" onclick="setAct(this)"><span style="display:flex;justify-content:space-between;align-items:center;width:100%;"><span class="c-t" style="font-size:13px;">🏋️ Moderately active</span><span class="c-d">gym 3–5x/week</span></span></button>
+          <button class="choice" style="padding:11px 14px;" data-act="1.725" onclick="setAct(this)"><span style="display:flex;justify-content:space-between;align-items:center;width:100%;"><span class="c-t" style="font-size:13px;">🔥 Very active</span><span class="c-d">gym 6–7x/week</span></span></button>
+        </div>
+      </div>
+      <button class="bigbtn" onclick="obNext(1)">Continue <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+    </div>
+
+    <!-- STEP 2: Experience -->
+    <div id="ob-s2" class="onboard-wrap" style="display:none;">
+      <div class="sec-t">Training level</div>
+      <div class="sec-s">This affects your protein targets and how fast we expect you to progress.</div>
+      <div class="choice-grid" style="margin-bottom:20px;">
+        <button class="choice" data-exp="beginner" onclick="setExp(this)">
+          <span class="c-icon">🌱</span>
+          <span class="c-t">Beginner</span>
+          <span class="c-d">Less than 1 year of consistent training</span>
+        </button>
+        <button class="choice sel" data-exp="intermediate" onclick="setExp(this)">
+          <span class="c-icon">💪</span>
+          <span class="c-t">Intermediate</span>
+          <span class="c-d">1–3 years, know the basics</span>
+        </button>
+        <button class="choice" data-exp="advanced" onclick="setExp(this)">
+          <span class="c-icon">🏆</span>
+          <span class="c-t">Advanced</span>
+          <span class="c-d">3+ years, near your genetic potential</span>
+        </button>
+      </div>
+      <button class="bigbtn" onclick="obNext(2)">Continue <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+      <button class="ghostbtn" style="margin-top:8px;" onclick="obBack(1)">← Back</button>
+    </div>
+
+    <!-- STEP 3: Aesthetic goal -->
+    <div id="ob-s3" class="onboard-wrap" style="display:none;">
+      <div class="sec-t">What do you want to look like?</div>
+      <div class="sec-s">Be honest. AI will decide your bulk/cut/recomp based on your photo AND this answer.</div>
+      <div class="choice-grid" style="margin-bottom:20px;">
+        <button class="choice" data-look="shredded" onclick="setLook(this)">
+          <span class="c-icon">🔪</span>
+          <span class="c-t">Shredded & veiny</span>
+          <span class="c-d">Visible abs, cuts, vascularity — lean is the goal</span>
+        </button>
+        <button class="choice" data-look="big" onclick="setLook(this)">
+          <span class="c-icon">🏆</span>
+          <span class="c-t">Big & muscular</span>
+          <span class="c-d">Maximum size, fullness, strength — mass is the goal</span>
+        </button>
+        <button class="choice sel" data-look="athletic" onclick="setLook(this)">
+          <span class="c-icon">⚡</span>
+          <span class="c-t">Athletic & lean</span>
+          <span class="c-d">Best overall — lean with visible muscle</span>
+        </button>
+        <button class="choice" data-look="ai" onclick="setLook(this)">
+          <span class="c-icon">🤖</span>
+          <span class="c-t">AI decides for me</span>
+          <span class="c-d">Pure decision based on my body</span>
+        </button>
+      </div>
+      <button class="bigbtn" onclick="obFinish()">Done — start scanning <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+      <button class="ghostbtn" style="margin-top:8px;" onclick="obBack(2)">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ HOME ═══ -->
+<div class="screen" id="screen-home">
+  <div class="topbar">
+    <div class="logo">Iron<em>Lens</em></div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--red);" id="home-av">AK</div>
+    </div>
+  </div>
+  <div class="scroll">
+    <div style="padding:0 20px 20px;">
+      <div style="font-size:13px;color:var(--t3);margin-bottom:4px;" id="home-greet">Welcome</div>
+      <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:900;letter-spacing:-0.5px;margin-bottom:20px;">Your AI<br/><em style="color:var(--red);font-style:normal;">physique coach</em></div>
+
+      <!-- SCAN CTA -->
+      <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:16px;padding:18px;margin-bottom:16px;cursor:pointer;" onclick="showScreen('scan')">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:50px;height:50px;border-radius:14px;background:var(--red2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" style="stroke:var(--red);fill:none;stroke-width:1.8;stroke-linecap:round;"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:500;margin-bottom:3px;">New body scan</div>
+            <div style="font-size:12px;color:var(--t2);">Upload photo → AI builds your complete diet + workout plan</div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" style="stroke:var(--t3);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+
+      <!-- STATS ROW -->
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;" id="home-stats-row">
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:14px 16px;flex-shrink:0;min-width:110px;">
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Score</div>
+          <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;" id="h-score">—</div>
+          <div style="font-size:11px;color:var(--t3);" id="h-score-sub">no scan</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:14px 16px;flex-shrink:0;min-width:110px;">
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Body fat</div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;" id="h-bf">—</div>
+          <div style="font-size:11px;color:var(--t3);" id="h-bf-sub">estimated</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:14px 16px;flex-shrink:0;min-width:110px;">
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Goal</div>
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;padding-top:4px;" id="h-goal">—</div>
+          <div style="font-size:11px;color:var(--t3);" id="h-goal-sub">pending</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:14px 16px;flex-shrink:0;min-width:110px;">
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Calories</div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;" id="h-cals">—</div>
+          <div style="font-size:11px;color:var(--t3);">kcal/day</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:14px 16px;flex-shrink:0;min-width:110px;">
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Protein</div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;" id="h-protein">—</div>
+          <div style="font-size:11px;color:var(--t3);">g/day</div>
+        </div>
+      </div>
+
+      <!-- RECENT SCANS -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:15px;font-weight:500;">Recent scans</div>
+        <div style="font-size:12px;color:var(--red);cursor:pointer;" onclick="showScreen('history')">See all</div>
+      </div>
+      <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;" id="home-recents">
+        <div style="flex-shrink:0;width:100px;height:130px;background:var(--bg2);border:1.5px dashed var(--b2);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;" onclick="showScreen('scan')">
+          <svg width="20" height="20" viewBox="0 0 24 24" style="stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span style="font-size:11px;color:var(--t3);">First scan</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bnav">
+    <div class="bi on" onclick="showScreen('home')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Home</span></div>
+    <div class="bi" onclick="showScreen('scan')"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Scan</span></div>
+    <div class="bi" onclick="showScreen('history')"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>History</span></div>
+  </div>
+</div>
+
+<!-- ═══ SCAN ═══ -->
+<div class="screen" id="screen-scan">
+  <div class="topbar" style="padding-bottom:8px;">
+    <div class="back-btn" onclick="showScreen('home')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Home</div>
+    <div class="logo" style="font-size:16px;">Iron<em>Lens</em></div>
+    <div style="width:50px;"></div>
+  </div>
+  <div class="scroll">
+    <div style="padding:0 20px 0;">
+      <div class="sec-t">Body scan</div>
+      <div class="sec-s">Front photo is enough. AI will decide your bulk/cut/recomp and build your full plan.</div>
+
+      <!-- ANGLE PILLS -->
+      <div class="angle-row" id="angle-pills" style="margin-bottom:14px;">
+        <div class="apill on" data-angle="Front" onclick="selAngle(this)">Front</div>
+        <div class="apill" data-angle="Back" onclick="selAngle(this)">Back</div>
+        <div class="apill" data-angle="Left" onclick="selAngle(this)">Left <span class="opt">opt</span></div>
+        <div class="apill" data-angle="Right" onclick="selAngle(this)">Right <span class="opt">opt</span></div>
+        <div class="apill" data-angle="Legs" onclick="selAngle(this)">Legs <span class="opt">opt</span></div>
+      </div>
+
+      <!-- UPLOAD -->
+      <div class="upload-zone" id="uzone" style="margin-bottom:14px;" onclick="zoneClick()">
+        <img id="prev-img" alt="preview"/>
+        <div class="prev-badge" id="prev-badge"></div>
+        <button class="prev-rm" id="prev-rm" onclick="rmPhoto(event)">✕</button>
+        <div class="up-inner" id="up-inner">
+          <div class="up-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+          <div style="font-size:15px;font-weight:500;" id="up-title">Drop front photo here</div>
+          <div style="font-size:12px;color:var(--t3);">Tap to browse</div>
+          <div style="font-size:11px;color:var(--t3);margin:2px 0;">— or —</div>
+          <button class="cam-btn" onclick="openCam(event)"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Camera</button>
+        </div>
+      </div>
+      <input type="file" id="file-in" accept="image/*" style="display:none" onchange="fileChosen(event)"/>
+
+      <!-- PROFILE REVIEW CARD -->
+      <div id="profile-card" style="background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:14px 16px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:11px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:1px;">Your profile</div>
+          <button onclick="openEditProfile()" style="padding:5px 12px;border-radius:8px;background:transparent;border:1px solid var(--b2);color:var(--t2);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" style="stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+        </div>
+        <div id="profile-display" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+        <div id="profile-empty" style="display:none;font-size:13px;color:var(--t3);text-align:center;padding:8px 0;">
+          No stats saved — <span style="color:var(--red);cursor:pointer;" onclick="openEditProfile()">add your details</span> for accurate calorie + protein targets
+        </div>
+      </div>
+
+      <!-- EDIT PROFILE DRAWER -->
+      <div id="edit-profile-drawer" style="display:none;background:var(--bg3);border:1px solid var(--b2);border-radius:14px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+          <span>Edit profile</span>
+          <button onclick="closeEditProfile()" style="width:28px;height:28px;border-radius:50%;background:var(--bg4);border:none;color:var(--t2);font-size:14px;cursor:pointer;">✕</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div><label class="inp-label">Age</label><input class="inp" id="ep-age" type="number" placeholder="22" min="14" max="80" style="font-size:15px;padding:11px 13px;"/></div>
+          <div><label class="inp-label">Weight (kg)</label><input class="inp" id="ep-weight" type="number" placeholder="75" style="font-size:15px;padding:11px 13px;"/></div>
+          <div><label class="inp-label">Height (cm)</label><input class="inp" id="ep-height" type="number" placeholder="175" style="font-size:15px;padding:11px 13px;"/></div>
+          <div><label class="inp-label">Sex</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:2px;">
+              <button class="choice" style="padding:10px 6px;" id="ep-male" onclick="epSetSex('male')"><span class="c-t" style="font-size:12px;">♂ Male</span></button>
+              <button class="choice" style="padding:10px 6px;" id="ep-female" onclick="epSetSex('female')"><span class="c-t" style="font-size:12px;">♀ Female</span></button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label class="inp-label">Aesthetic goal</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <button class="choice" id="ep-shredded" onclick="epSetLook('shredded')" style="padding:10px 10px;"><span class="c-t" style="font-size:12px;">🔪 Shredded</span></button>
+            <button class="choice" id="ep-big" onclick="epSetLook('big')" style="padding:10px 10px;"><span class="c-t" style="font-size:12px;">🏆 Big & muscular</span></button>
+            <button class="choice" id="ep-athletic" onclick="epSetLook('athletic')" style="padding:10px 10px;"><span class="c-t" style="font-size:12px;">⚡ Athletic & lean</span></button>
+            <button class="choice" id="ep-ai" onclick="epSetLook('ai')" style="padding:10px 10px;"><span class="c-t" style="font-size:12px;">🤖 AI decides</span></button>
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label class="inp-label">Activity level</label>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <button class="choice" id="ep-act-1.2" data-act="1.2" onclick="epSetAct(this)" style="padding:9px 12px;"><span style="display:flex;justify-content:space-between;width:100%;"><span class="c-t" style="font-size:12px;">😴 Sedentary</span><span class="c-d">desk job</span></span></button>
+            <button class="choice" id="ep-act-1.375" data-act="1.375" onclick="epSetAct(this)" style="padding:9px 12px;"><span style="display:flex;justify-content:space-between;width:100%;"><span class="c-t" style="font-size:12px;">🚶 Lightly active</span><span class="c-d">gym 1–3x</span></span></button>
+            <button class="choice" id="ep-act-1.55" data-act="1.55" onclick="epSetAct(this)" style="padding:9px 12px;"><span style="display:flex;justify-content:space-between;width:100%;"><span class="c-t" style="font-size:12px;">🏋️ Moderately active</span><span class="c-d">gym 3–5x</span></span></button>
+            <button class="choice" id="ep-act-1.725" data-act="1.725" onclick="epSetAct(this)" style="padding:9px 12px;"><span style="display:flex;justify-content:space-between;width:100%;"><span class="c-t" style="font-size:12px;">🔥 Very active</span><span class="c-d">gym 6–7x</span></span></button>
+          </div>
+        </div>
+        <button class="bigbtn" style="padding:13px;" onclick="saveEditProfile()">Save changes</button>
+      </div>
+
+      <button class="bigbtn" id="scan-btn" disabled onclick="runScan()" style="letter-spacing:0.2px;">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Upload a photo to scan
+      </button>
+      <div style="font-size:11px;color:var(--t3);text-align:center;margin-top:8px;" id="scan-status">0 photos · Front required</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOADING ═══ -->
+<div class="screen" id="screen-loading">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:40px 24px;text-align:center;">
+    <div class="spinner"></div>
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;">Building your plan...</div>
+      <div style="font-size:14px;color:var(--t2);" id="load-msg">Analysing your physique</div>
+    </div>
+    <div class="dots"><span></span><span></span><span></span></div>
+    <div style="font-size:12px;color:var(--t3);max-width:260px;line-height:1.6;">AI is scanning muscles, deciding your goal, and building your complete diet + workout plan</div>
+  </div>
+</div>
+
+<!-- ═══ RESULTS ═══ -->
+<div class="screen" id="screen-results">
+  <div class="topbar" style="padding-bottom:8px;">
+    <div class="back-btn" onclick="showScreen('scan')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>New scan</div>
+    <div class="logo" style="font-size:16px;">Iron<em>Lens</em></div>
+    <div style="width:60px;"></div>
+  </div>
+  <div class="scroll" id="results-scroll">
+    <div id="results-content" style="padding:4px 20px 20px;"></div>
+  </div>
+</div>
+
+<!-- ═══ HISTORY ═══ -->
+<div class="screen" id="screen-history">
+  <div class="topbar">
+    <div class="logo">Iron<em>Lens</em></div>
+  </div>
+  <div class="scroll">
+    <div style="padding:0 20px 16px;"><div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;">Scan history</div></div>
+    <div class="hgrid" id="history-grid">
+      <div style="grid-column:span 2;padding:48px 20px;text-align:center;color:var(--t3);font-size:13px;">No scans yet — upload your first photo</div>
+    </div>
+  </div>
+  <div class="bnav">
+    <div class="bi" onclick="showScreen('home')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Home</span></div>
+    <div class="bi" onclick="showScreen('scan')"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Scan</span></div>
+    <div class="bi on" onclick="showScreen('history')"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>History</span></div>
+  </div>
+</div>
+
+</div><!-- shell -->
+
+<!-- CAMERA -->
+<div class="cam-modal" id="cam-modal">
+  <div class="cam-top"><div class="cam-top-title">Take photo</div><button class="cam-x" onclick="closeCam()">✕</button></div>
+  <video id="cam-vid" autoplay playsinline muted style="flex:1;width:100%;object-fit:cover;"></video>
+  <div class="cam-btns">
+    <button class="cam-flip-btn" onclick="flipCam()"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg></button>
+    <button class="shutter" onclick="snap()"></button>
+    <div style="width:44px;"></div>
+  </div>
+  <canvas id="snapc" style="display:none;"></canvas>
+</div>
+
+<!-- OVERRIDE MODAL — lives in shell, never re-rendered -->
+<div id="override-modal" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0);z-index:150;flex-direction:column;align-items:stretch;justify-content:flex-end;max-width:480px;margin:0 auto;transition:background 0.3s ease;" onclick="closeOverrideModal()">
+  <div id="ov-sheet" style="background:var(--bg2);border-radius:20px 20px 0 0;padding:24px 20px;border-top:1px solid var(--b2);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);">
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(245,158,11,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" style="stroke:#f59e0b;fill:none;stroke-width:2;stroke-linecap:round;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div style="font-size:17px;font-weight:500;color:var(--t1);" id="ov-title">Override goal?</div>
+    </div>
+    <!-- AI SAYS -->
+    <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">AI recommendation</div>
+    <div style="font-size:13px;color:var(--t2);padding:10px 12px;background:var(--bg3);border-radius:10px;border-left:2px solid var(--amber);line-height:1.6;margin-bottom:14px;" id="ov-warning"></div>
+    <!-- ARE YOU SURE -->
+    <div style="font-size:13px;color:var(--t2);margin-bottom:16px;" id="ov-sure"></div>
+    <button id="ov-confirm" onclick="confirmOverride()" style="width:100%;padding:15px;border-radius:13px;background:var(--red);color:#fff;border:none;font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:10px;transition:transform 0.1s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform=''" id="ov-confirm">Yes, I'm sure — build this plan</button>
+    <button onclick="closeOverrideModal()" style="width:100%;padding:13px;border-radius:12px;background:transparent;border:1px solid var(--b2);color:var(--t2);font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif;">Keep AI recommendation</button>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+let user = { sex:'male', activity:1.375, exp:'intermediate', look:'athletic' };
+let photos = {};
+let curAngle = 'Front';
+let camStream = null;
+let frontCam = true;
+let history = [];
+try { history = JSON.parse(localStorage.getItem('il_v5')||'[]'); } catch(e){}
+try { const u = JSON.parse(localStorage.getItem('il_user')||'null'); if(u) { user = {...user,...u}; } } catch(e){}
+
+const ANGLES = ['Front','Back','Left','Right','Legs'];
+const LMSGS = ['Analysing your physique...','Detecting muscle development...','Estimating body fat...','Deciding your optimal goal...','Calculating calorie targets...','Building your meal plan...','Designing your workout programme...','Almost done...'];
+
+// ── ONBOARDING ─────────────────────────────────────────
+function setSex(el){ user.sex=el.dataset.sex; document.querySelectorAll('[data-sex]').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); }
+function setAct(el){ user.activity=parseFloat(el.dataset.act); document.querySelectorAll('[data-act]').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); }
+function setExp(el){ user.exp=el.dataset.exp; document.querySelectorAll('[data-exp]').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); }
+function setLook(el){ user.look=el.dataset.look; document.querySelectorAll('[data-look]').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); }
+
+function obNext(step) {
+  if(step===1){
+    const age=document.getElementById('ob-age').value;
+    const wt=document.getElementById('ob-weight').value;
+    const ht=document.getElementById('ob-height').value;
+    if(!age||!wt||!ht){alert('Please fill in all stats.');return;}
+    user.age=parseFloat(age); user.weight=parseFloat(wt); user.height=parseFloat(ht);
+  }
+  document.getElementById('ob-s'+step).style.display='none';
+  document.getElementById('ob-s'+(step+1)).style.display='block';
+  document.getElementById('ob-step-label').textContent=(step+1)+' of 3';
+  document.getElementById('ob-progress').style.width=((step+1)/3*100)+'%';
+}
+function obBack(step) {
+  document.getElementById('ob-s'+(step+1)).style.display='none';
+  document.getElementById('ob-s'+step).style.display='block';
+  document.getElementById('ob-step-label').textContent=step+' of 3';
+  document.getElementById('ob-progress').style.width=(step/3*100)+'%';
+}
+function obFinish() {
+  try { localStorage.setItem('il_user', JSON.stringify(user)); } catch(e){}
+  updateHomeStats();
+  showScreen('home');
+}
+
+// ── SCREENS ────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const target = document.getElementById('screen-'+name);
+  if(target) target.classList.add('active');
+  // Update bottom nav
+  document.querySelectorAll('.bnav .bi').forEach((b,i)=>{
+    b.classList.remove('on');
+    if(name==='home' && i===0) b.classList.add('on');
+    if(name==='history' && i===2) b.classList.add('on');
+  });
+  // Side effects
+  if(name==='history') { renderHistory(); }
+  if(name==='scan') { renderProfileCard(); }
+  // Scroll results to top when showing
+  if(name==='results') {
+    const rs = document.getElementById('results-scroll');
+    if(rs) rs.scrollTop = 0;
+  }
+  // Close any open modal
+  closeOverrideModal(true);
+}
+
+// ── ANGLE ──────────────────────────────────────────────
+function selAngle(el) {
+  curAngle = el.dataset.angle;
+  document.querySelectorAll('.apill').forEach(p=>{ p.classList.remove('on'); if(photos[p.dataset.angle]) p.classList.add('done'); else p.classList.remove('done'); });
+  el.classList.add('on');
+  loadPreview();
+}
+function refreshPills() {
+  document.querySelectorAll('.apill').forEach(p=>{ p.classList.remove('on','done'); if(p.dataset.angle===curAngle) p.classList.add('on'); if(photos[p.dataset.angle]) p.classList.add('done'); });
+}
+function loadPreview() {
+  const s=photos[curAngle];
+  const img=document.getElementById('prev-img');
+  const inner=document.getElementById('up-inner');
+  const rm=document.getElementById('prev-rm');
+  const badge=document.getElementById('prev-badge');
+  const title=document.getElementById('up-title');
+  if(s){ img.src=s.dataUrl;img.style.display='block';inner.style.display='none';rm.style.display='flex';badge.textContent=curAngle+' view';badge.style.display='block';document.getElementById('uzone').classList.add('filled'); }
+  else{ img.style.display='none';img.src='';inner.style.display='flex';rm.style.display='none';badge.style.display='none';title.textContent='Drop '+curAngle.toLowerCase()+' photo';document.getElementById('uzone').classList.remove('filled'); }
+}
+function updateScanBtn() {
+  const count=Object.keys(photos).length;
+  const hasFront=!!photos['Front'];
+  const btn=document.getElementById('scan-btn');
+  btn.disabled=!hasFront;
+  btn.innerHTML=hasFront?`<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Analyse ${count} photo${count>1?'s':''}`:`<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#6a3333;fill:none;stroke-width:2;stroke-linecap:round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Upload a photo to scan`;
+  document.getElementById('scan-status').textContent=hasFront?`${count} angle${count>1?'s':''} ready: ${Object.keys(photos).join(', ')}`:'0 photos · Front required';
+  refreshPills();
+}
+
+// ── PHOTO ──────────────────────────────────────────────
+function zoneClick(){ if(photos[curAngle])return; document.getElementById('file-in').click(); }
+function fileChosen(e){ const f=e.target.files[0]; if(!f)return; e.target.value=''; const r=new FileReader(); r.onload=ev=>setPhoto(ev.target.result); r.readAsDataURL(f); }
+function setPhoto(dataUrl){ photos[curAngle]={dataUrl,base64:dataUrl.split(',')[1]}; loadPreview(); updateScanBtn(); }
+function rmPhoto(e){ e.stopPropagation(); delete photos[curAngle]; loadPreview(); updateScanBtn(); }
+
+// sample photos for testing
+function useSample(url, label) {
+  fetch(url).then(r=>r.blob()).then(blob=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{ setPhoto(ev.target.result); };
+    reader.readAsDataURL(blob);
+  }).catch(()=>{ alert('Could not load sample. Try uploading your own photo.'); });
+}
+
+// drag drop
+const uz=document.getElementById('uzone');
+uz.addEventListener('dragover',e=>{e.preventDefault();if(!photos[curAngle])uz.style.borderColor='var(--red)';});
+uz.addEventListener('dragleave',()=>uz.style.borderColor='');
+uz.addEventListener('drop',e=>{e.preventDefault();uz.style.borderColor='';if(photos[curAngle])return;const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')){const r=new FileReader();r.onload=ev=>setPhoto(ev.target.result);r.readAsDataURL(f);}});
+
+// ── CAMERA ─────────────────────────────────────────────
+function openCam(e){ e.stopPropagation(); document.getElementById('cam-modal').classList.add('open'); startCam(); }
+async function startCam(){ try{ if(camStream)camStream.getTracks().forEach(t=>t.stop()); camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:frontCam?'user':'environment'}}); document.getElementById('cam-vid').srcObject=camStream; }catch(err){alert('Camera permission denied.');closeCam();} }
+function flipCam(){ frontCam=!frontCam; startCam(); }
+function closeCam(){ if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;} document.getElementById('cam-modal').classList.remove('open'); }
+function snap(){ const v=document.getElementById('cam-vid'); const c=document.getElementById('snapc'); c.width=v.videoWidth;c.height=v.videoHeight; c.getContext('2d').drawImage(v,0,0); closeCam(); setPhoto(c.toDataURL('image/jpeg',0.92)); }
+
+// ── SCAN ───────────────────────────────────────────────
+async function runScan() {
+  if(!photos['Front']) return;
+  showScreen('loading');
+  let li=0;
+  const lt=setInterval(()=>{ li=(li+1)%LMSGS.length; const el=document.getElementById('load-msg'); if(el)el.textContent=LMSGS[li]; },2000);
+
+  const included=ANGLES.filter(a=>photos[a]);
+  const blocks=[];
+  included.forEach(a=>{ blocks.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:photos[a].base64}}); blocks.push({type:'text',text:`[${a} view]`}); });
+
+  const lookMap = { shredded:'Shredded & veiny — visible abs, vascularity, definition', big:'Big & muscular — maximum size, fullness, mass', athletic:'Athletic & lean — balanced muscle with visible definition', ai:'Pure AI decision based on body' };
+  const userCtx = user.age&&user.weight&&user.height ? `User stats: ${user.age}yo, ${user.weight}kg, ${user.height}cm, ${user.sex}, activity multiplier ${user.activity}, ${user.exp} trainer. Aesthetic goal: ${lookMap[user.look]||'AI decides'}.` : `No stats provided. Aesthetic goal: ${lookMap[user.look]||'AI decides'}.`;
+
+  blocks.push({type:'text',text:`You are an elite physique analyst, sports scientist, and personal trainer. ${userCtx} Analyse ${included.length} photo(s): ${included.join(', ')}.
+
+CRITICAL RULES:
+1. GOAL DECISION — AI decides bulk/cut/recomp based on BOTH physique AND aesthetic goal:
+- "Shredded & veiny" + already has muscle (good/elite scores) → CUT (muscle is there, reveal it)
+- "Shredded & veiny" + no real muscle yet (mostly weak/fair) → RECOMP first, be honest — cutting without muscle = looking skinny not shredded
+- "Big & muscular" + lean (under 15% BF) → BULK (perfect time, go for it)
+- "Big & muscular" + moderate fat (15-20%) → BULK with tight surplus, warn about fat gain
+- "Big & muscular" + high fat (over 20%) → CUT first, then bulk, be honest
+- "Athletic & lean" + beginner → RECOMP (use the newbie gains window — can build AND lose fat simultaneously)
+- "Athletic & lean" + intermediate + low BF (under 13%) + has muscle → BULK (already lean, needs mass for athletic look)
+- "Athletic & lean" + intermediate + moderate/high BF → RECOMP or CUT
+- "Athletic & lean" + advanced + lean → BULK (at this stage needs mass not recomp)
+- AI decides + BF over 20% → CUT
+- AI decides + BF under 12% + has muscle → BULK  
+- AI decides + BF under 12% + little muscle → BULK (lean base, needs mass)
+- AI decides + beginner → RECOMP
+- AI decides + advanced + lean → BULK
+- AI decides + everything else → RECOMP
+2. MUSCLE SCORING — score = THICKNESS + MASS, NOT leanness. Lean but flat abs = "fair" not "good".
+3. CALORIES — use Mifflin-St Jeor if stats provided: Male BMR=(10×kg)+(6.25×cm)-(5×age)+5, Female=(10×kg)+(6.25×cm)-(5×age)-161. Multiply by activity ${user.activity||1.375}. Bulk=+300, Cut=-400, Recomp=maintenance.
+4. PROTEIN — Bulk: 1.8g/kg. Cut: 2.6g/kg. Recomp: 2.0g/kg.
+5. MEAL PLAN — real foods, specific. Not vague. e.g. "200g chicken breast, 150g rice, broccoli"
+6. WORKOUT — target their specific weak spots. Real exercises, sets, reps.
+7. BE HONEST — if someone wants to be shredded but has no muscle, tell them. That's what a real PT does.
+
+Respond ONLY raw JSON, no markdown:
+{"overallScore":<1.0-10.0>,"scoreLabel":"<Beginner|Developing|Intermediate|Advanced|Elite>","bodyFatEstimate":"<e.g. 12-15%>","bodyFatCategory":"<low|moderate|high>","muscleMassEstimate":"<e.g. 62.5 — single number kg using weight×(1-bf/100)>","bmiEstimate":"<single number e.g. 22.4>","bmiCategory":"<Underweight|Normal|Overweight>","bodyType":"<type>","summary":"<3 honest sentences>","honestTalk":"<1-2 sentences of brutal honest PT advice — what they REALLY need to hear>","goalDecision":{"phase":"<bulk|cut|recomp>","reasoning":"<2-3 sentences explaining WHY this goal suits their body + aesthetic goal>","override":"<if AI disagrees with their aesthetic choice, explain honestly why. Empty string if AI agrees>","duration":"<weeks>","calories":<number>,"protein":<grams>,"carbs":<grams>,"fat":<grams>,"calorieGuidance":"<e.g. +300 above maintenance>","adjustRule":"<how to adjust weekly>"},"muscles":[{"name":"<group>","score":<0-100>,"status":"<weak|fair|good|elite>","note":"<honest>"}],"weakSpots":["<muscle>"],"strengths":["<real strength>"],"mealPlan":[{"meal":"<Breakfast|Lunch|Dinner|Snack|Pre-workout|Post-workout>","time":"<e.g. 7am>","foods":["<specific food + amount>"],"protein":<g>,"calories":<kcal>}],"workoutPlan":[{"day":"<Mon|Tue|Wed|Thu|Fri|Sat|Sun>","focus":"<e.g. Push — chest/shoulders/triceps>","target":"<weak spot this targets>","exercises":[{"name":"<exercise>","sets":"<e.g. 4x10>","rest":"<e.g. 90s>","note":"<why>"}]}],"supplements":[{"name":"<supplement>","dose":"<dose>","timing":"<when>","evidence":"<high|moderate|low>","note":"<why or why not>"}],"weeklyAdjust":"<how to adjust calories/training based on weekly progress>"}
+Include 6-8 muscles, 4-5 meals, 4-5 workout days, 2-3 supplements. Concise values. Complete valid JSON.`});
+
+  try {
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-calls':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:blocks}]})});
+    clearInterval(lt);
+    const data=await resp.json();
+    if(data.error)throw new Error(data.error.message);
+    let raw=((data.content||[])[0]||{}).text||'';
+    raw=raw.replace(/```json|```/g,'').trim();
+    let r;
+    try{r=JSON.parse(raw);}catch(pe){
+      let o=0,oa=0;
+      for(const ch of raw){if(ch==='{')o++;else if(ch==='}')o--;else if(ch==='[')oa++;else if(ch===']')oa--;}
+      let fx=raw.replace(/,\s*$/,'');
+      while(oa>0){fx+=']';oa--;}while(o>0){fx+='}';o--;}
+      r=JSON.parse(fx);
+    }
+    if(!r.overallScore&&r.overallScore!==0)throw new Error('Bad format');
+    renderResults(r, included, 'scan');
+    saveHistory(r);
+    showScreen('results');
+    document.getElementById('results-scroll').scrollTo(0,0);
+  } catch(err) {
+    clearInterval(lt);
+    showScreen('scan');
+    setTimeout(()=>{ alert('Scan failed: '+( err.message||'Please try again')); },100);
+  }
+}
+
+// ── PROFILE CARD ───────────────────────────────────────
+function renderProfileCard() {
+  const display = document.getElementById('profile-display');
+  const empty = document.getElementById('profile-empty');
+  if(!display) return;
+  if(!user.age && !user.weight && !user.height) {
+    display.style.display = 'none'; empty.style.display = 'block'; return;
+  }
+  empty.style.display = 'none'; display.style.display = 'grid';
+  const lookMap = { shredded:'🔪 Shredded', big:'🏆 Big & muscular', athletic:'⚡ Athletic & lean', ai:'🤖 AI decides' };
+  const actMap = { '1.2':'Sedentary', '1.375':'Lightly active', '1.55':'Moderate', '1.725':'Very active', '1.9':'Athlete' };
+  const items = [
+    user.age?{label:'Age',val:user.age+' yrs'}:null,
+    user.weight?{label:'Weight',val:user.weight+' kg'}:null,
+    user.height?{label:'Height',val:user.height+' cm'}:null,
+    user.sex?{label:'Sex',val:user.sex==='male'?'♂ Male':'♀ Female'}:null,
+    user.look?{label:'Goal',val:lookMap[user.look]||'🤖 AI decides'}:null,
+    user.activity?{label:'Activity',val:actMap[String(user.activity)]||'Active'}:null,
+  ].filter(Boolean);
+  display.innerHTML = items.map(it=>`<div style="background:var(--bg3);border-radius:10px;padding:10px 12px;"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;">${it.label}</div><div style="font-size:13px;font-weight:500;color:var(--t1);">${it.val}</div></div>`).join('');
+}
+function openEditProfile() {
+  const d=document.getElementById('edit-profile-drawer');
+  d.style.display='block';
+  if(user.age)document.getElementById('ep-age').value=user.age;
+  if(user.weight)document.getElementById('ep-weight').value=user.weight;
+  if(user.height)document.getElementById('ep-height').value=user.height;
+  document.getElementById('ep-male').classList.toggle('sel',user.sex==='male');
+  document.getElementById('ep-female').classList.toggle('sel',user.sex==='female');
+  ['shredded','big','athletic','ai'].forEach(l=>document.getElementById('ep-'+l).classList.toggle('sel',user.look===l));
+  [1.2,1.375,1.55,1.725].forEach(a=>{const el=document.getElementById('ep-act-'+a);if(el)el.classList.toggle('sel',user.activity===a);});
+  d.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeEditProfile() { document.getElementById('edit-profile-drawer').style.display='none'; }
+function epSetSex(s) { document.getElementById('ep-male').classList.toggle('sel',s==='male'); document.getElementById('ep-female').classList.toggle('sel',s==='female'); user.sex=s; }
+function epSetLook(l) { ['shredded','big','athletic','ai'].forEach(k=>document.getElementById('ep-'+k).classList.remove('sel')); document.getElementById('ep-'+l).classList.add('sel'); user.look=l; }
+function epSetAct(el) { document.querySelectorAll('[id^="ep-act-"]').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); user.activity=parseFloat(el.dataset.act); }
+function saveEditProfile() {
+  const age=parseFloat(document.getElementById('ep-age').value);
+  const weight=parseFloat(document.getElementById('ep-weight').value);
+  const height=parseFloat(document.getElementById('ep-height').value);
+  if(age)user.age=age; if(weight)user.weight=weight; if(height)user.height=height;
+  try{localStorage.setItem('il_user',JSON.stringify(user));}catch(e){}
+  closeEditProfile(); renderProfileCard();
+}
+
+function switchWorkoutDay(idx) {
+  document.querySelectorAll('.wtab').forEach((t,i) => { t.classList.toggle('wt-active', i===idx); });
+  document.querySelectorAll('.wday-panel').forEach((p,i) => { p.classList.toggle('wp-active', i===idx); });
+}
+
+// ── RENDER ─────────────────────────────────────────────
+function renderResults(r, angles, backTo) {
+  backTo = backTo || 'scan';
+  const backLabel = backTo==='history' ? '← History' : backTo==='home' ? '← Home' : 'New scan';
+  // Update back button
+  const bb = document.querySelector('#screen-results .back-btn');
+  if(bb){ bb.textContent=''; bb.innerHTML=`<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--t2);fill:none;stroke-width:2;stroke-linecap:round;"><polyline points="15 18 9 12 15 6"/></svg>${backLabel}`; bb.onclick=()=>showScreen(backTo); }
+  const g = r.goalDecision||{};
+  const sc=r.overallScore||0;
+  const scCol=sc>=8?'var(--green)':sc>=6?'var(--amber)':sc>=4?'var(--red)':'#ff5555';
+  const phCol=g.phase==='bulk'?'var(--green)':g.phase==='cut'?'var(--red)':'var(--blue)';
+  const phBg=g.phase==='bulk'?'var(--green2)':g.phase==='cut'?'var(--red2)':'var(--blue2)';
+  const phName=g.phase==='bulk'?'BULK 🍗':g.phase==='cut'?'CUT 🔥':'RECOMP ⚡';
+  const cardBg=sc>=7?'var(--red)':sc>=5?'#1c1500':'#180a0a';
+  const cardBorder=sc>=7?'transparent':sc>=5?'#f59e0b44':'#ff333344';
+  const tc=sc>=7?'#fff':'var(--t1)';
+  const mc=sc>=7?'rgba(255,255,255,0.6)':'var(--t3)';
+
+  // Store result globally for override buttons
+  window._currentScanResult = r;
+
+  // Update home — always set, even if 0
+  document.getElementById('h-score').textContent=sc.toFixed(1);
+  document.getElementById('h-score').style.color=scCol;
+  document.getElementById('h-score-sub').textContent=r.scoreLabel||'';
+  document.getElementById('h-goal').textContent=phName;
+  document.getElementById('h-goal').style.color=phCol;
+  document.getElementById('h-goal-sub').textContent=g.duration||'';
+  const calsEl=document.getElementById('h-cals'); const protEl=document.getElementById('h-protein');
+  if(calsEl) calsEl.textContent = g.calories ? g.calories.toLocaleString() : '—';
+  if(protEl) protEl.textContent = g.protein ? g.protein+'g' : '—';
+  // Body fat on home
+  const bfEl=document.getElementById('h-bf'); const bfSubEl=document.getElementById('h-bf-sub');
+  if(bfEl && r.bodyFatEstimate) {
+    bfEl.textContent = r.bodyFatEstimate;
+    const bfCol = r.bodyFatCategory==='high'?'var(--red)':r.bodyFatCategory==='low'?'var(--green)':'var(--amber)';
+    bfEl.style.color = bfCol;
+    if(bfSubEl) bfSubEl.textContent = r.bodyFatCategory==='high'?'High fat':r.bodyFatCategory==='low'?'Lean':'Moderate';
+  }
+
+  const mHTML=(r.muscles||[]).map(m=>{ const bc=m.status==='elite'?'#4ade80':m.status==='good'?'var(--green)':m.status==='fair'?'var(--amber)':'var(--red)'; return `<div class="mrow"><div class="mrow-top"><div class="mname">${m.name}</div><div style="font-size:11px;color:var(--t3);width:24px;text-align:right;">${m.score}</div><div class="mbar-bg"><div class="mbar" style="width:${m.score}%;background:${bc};"></div></div><div class="mbadge ${m.status}">${m.status}</div></div>${m.note?`<div style="font-size:11px;color:var(--t3);margin-top:2px;">${m.note}</div>`:''}</div>`; }).join('');
+
+  const mealHTML=(r.mealPlan||[]).map(m=>{ const foods=(m.foods||[]).join(', '); return `<div class="meal-item"><div class="meal-icon">${m.meal.includes('Break')?'🌅':m.meal.includes('Lunch')?'☀️':m.meal.includes('Dinner')?'🌙':m.meal.includes('Pre')?'⚡':m.meal.includes('Post')?'💪':'🍎'}</div><div style="flex:1;"><div class="meal-name">${m.meal} <span style="font-size:11px;color:var(--t3);">${m.time||''}</span></div><div class="meal-foods">${foods}</div></div><div style="text-align:right;flex-shrink:0;"><div class="meal-p">${m.protein}g</div><div class="meal-k">${m.calories} kcal</div></div></div>`; }).join('');
+
+  // WORKOUT — beautiful day tabs + exercise cards
+  let workoutHTML = '';
+  if(r.workoutPlan && r.workoutPlan.length) {
+    const wDays = r.workoutPlan;
+    const allDays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    // Build tab row
+    const tabsHTML = wDays.map((wd,i) => {
+      const shortDay = wd.day.substring(0,3);
+      const focusShort = wd.focus.split('—')[0].split('–')[0].trim().split(' ').slice(0,1).join('');
+      const isRest = wd.focus.toLowerCase().includes('rest');
+      return `<div class="wtab ${i===0?'wt-active':''} ${isRest?'wt-rest':''}" onclick="switchWorkoutDay(${i})" id="wtab-${i}">
+        <div class="wtab-day">${shortDay}</div>
+        <div class="wtab-label">${focusShort}</div>
+        <div class="wtab-dot"></div>
+      </div>`;
+    }).join('');
+
+    // Build each day panel
+    const panelsHTML = wDays.map((wd,di) => {
+      const isRest = wd.focus.toLowerCase().includes('rest');
+      const exCount = (wd.exercises||[]).length;
+      const exHTML = isRest ? `
+        <div style="padding:28px 18px;text-align:center;">
+          <div style="font-size:32px;margin-bottom:8px;">😴</div>
+          <div style="font-size:15px;font-weight:500;margin-bottom:6px;">Rest day</div>
+          <div style="font-size:13px;color:var(--t3);line-height:1.6;">Recovery is part of the programme. Sleep well, eat your protein, stretch if needed.</div>
+        </div>` :
+        (wd.exercises||[]).map((ex,ei) => `
+          <div class="ex-card">
+            <div class="ex-card-left">
+              <div class="ex-num-badge">${ei+1}</div>
+            </div>
+            <div class="ex-card-body">
+              <div class="ex-card-name">${ex.name}</div>
+              <div class="ex-card-note">${ex.note||''}</div>
+            </div>
+            <div class="ex-card-right">
+              <div class="ex-sets-pill">${ex.sets}</div>
+              ${ex.rest?`<div class="ex-rest-pill">${ex.rest}</div>`:''}
+            </div>
+          </div>`).join('');
+
+      return `<div class="wday-panel ${di===0?'wp-active':''}" id="wpanel-${di}">
+        <div class="wday-header">
+          <div>
+            <div class="wday-header-day">${wd.day}</div>
+            <div class="wday-header-focus">${wd.focus}</div>
+          </div>
+          ${wd.target?`<div class="wday-target-tag">${wd.target}</div>`:''}
+        </div>
+        ${!isRest?`<div class="wday-meta">
+          <span class="wday-meta-pill">
+            <svg width="11" height="11" viewBox="0 0 24 24" style="stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            ${exCount} exercises
+          </span>
+        </div>`:''}
+        ${exHTML}
+      </div>`;
+    }).join('');
+
+    workoutHTML = `
+      <div class="rcard" style="padding:0;overflow:hidden;">
+        <div style="padding:14px 20px 12px;border-bottom:1px solid var(--b1);">
+          <div class="rcard-t" style="margin-bottom:0;">Your workout programme</div>
+        </div>
+        <div class="wtabs-scroll" style="padding:12px 20px 0;">${tabsHTML}</div>
+        <div class="wpanels">${panelsHTML}</div>
+      </div>`;
+  }
+
+  const supHTML=(r.supplements||[]).map(s=>{ const evClass=s.evidence==='high'?'ev-high':'ev-mod'; return `<div class="sup-item"><div class="sup-icon">${s.name.toLowerCase().includes('creatine')?'💊':s.name.toLowerCase().includes('protein')?'🥛':'☕'}</div><div><div class="sup-t">${s.name}</div><div class="sup-d">${s.dose} · ${s.timing}. ${s.note}</div><div class="sup-ev ${evClass}">${s.evidence} evidence</div></div></div>`; }).join('');
+
+  const weakTags=(r.weakSpots||[]).map(w=>`<span style="display:inline-block;padding:5px 12px;border-radius:8px;background:var(--red2);color:var(--red);font-size:12px;font-weight:500;margin:3px 3px 0 0;">${w}</span>`).join('');
+  const strHTML=(r.strengths||[]).map(s=>`<div style="padding:6px 0;border-bottom:1px solid var(--b1);font-size:13px;color:var(--t2);display:flex;gap:8px;"><span style="color:var(--green);flex-shrink:0;">✓</span>${s}</div>`).join('');
+
+  document.getElementById('results-content').innerHTML = `
+  <div class="fade-in">
+
+    <!-- BODY STATS HERO — body fat prominent at top -->
+    <div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:18px;padding:20px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+        <div class="score-big" style="color:${scCol};">${sc.toFixed(1)}</div>
+        <div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:${mc};margin-bottom:3px;">${r.scoreLabel} · ${r.bodyType||''}</div>
+          <div style="font-size:12px;color:${mc};line-height:1.5;">${(r.summary||'').split('.')[0]}.</div>
+          <div class="phase-badge" style="background:${phBg};color:${phCol};border:1px solid ${phCol}33;margin-top:6px;">${phName}</div>
+        </div>
+      </div>
+      <!-- BODY STATS GRID -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:10px;color:${mc};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Body fat</div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:${r.bodyFatCategory==='high'?'var(--red)':r.bodyFatCategory==='low'?'var(--green)':'var(--amber)'};">${r.bodyFatEstimate||'—'}</div>
+          <div style="font-size:10px;color:${mc};margin-top:2px;">${r.bodyFatCategory==='high'?'High':r.bodyFatCategory==='low'?'Lean':'Moderate'}</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:10px;color:${mc};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Est. muscle</div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:${tc};">${r.muscleMassEstimate||'—'}</div>
+          <div style="font-size:10px;color:${mc};margin-top:2px;">kg lean mass</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.06);">
+          <div style="font-size:10px;color:${mc};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">BMI est.</div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:${tc};">${r.bmiEstimate||'—'}</div>
+          <div style="font-size:10px;color:${mc};margin-top:2px;">${r.bmiCategory||''}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HONEST TALK -->
+    ${r.honestTalk?`<div class="honest-box"><div class="hb-title"><svg width="14" height="14" viewBox="0 0 24 24" style="stroke:var(--red);fill:none;stroke-width:2;stroke-linecap:round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Honest PT talk</div><div class="hb-body">${r.honestTalk}</div></div>`:''}
+
+    <!-- GOAL DECISION — Option C: AI recommends, user can override -->
+    <div class="rcard" id="goal-decision-card" style="background:${phBg};border-color:${phCol}33;">
+      <div class="rcard-t">AI recommendation</div>
+      <div style="font-family:'Syne',sans-serif;font-size:30px;font-weight:900;color:${phCol};margin-bottom:6px;">${phName}</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:12px;">${g.reasoning||''}</div>
+
+      <!-- If AI disagrees with user's chosen goal, show honest warning -->
+      ${g.override?`<div style="padding:10px 12px;background:rgba(245,158,11,0.08);border-radius:10px;border-left:2px solid var(--amber);margin-bottom:12px;">
+        <div style="font-size:12px;color:var(--amber);font-weight:500;margin-bottom:3px;">⚠ Honest PT take</div>
+        <div style="font-size:12px;color:var(--t2);line-height:1.5;">${g.override}</div>
+      </div>`:''}
+
+      <!-- Override buttons — always visible -->
+      <div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-weight:500;">Not what you want? Override →</div>
+      <div style="display:flex;gap:7px;">
+        <button onclick="overrideGoal('bulk')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${g.phase==='bulk'?'var(--green)':'var(--b2)'};background:${g.phase==='bulk'?'var(--green2)':'transparent'};color:${g.phase==='bulk'?'var(--green)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🍗 Bulk</button>
+        <button onclick="overrideGoal('cut')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${g.phase==='cut'?'var(--red)':'var(--b2)'};background:${g.phase==='cut'?'var(--red2)':'transparent'};color:${g.phase==='cut'?'var(--red)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🔥 Cut</button>
+        <button onclick="overrideGoal('recomp')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${g.phase==='recomp'?'var(--blue)':'var(--b2)'};background:${g.phase==='recomp'?'var(--blue2)':'transparent'};color:${g.phase==='recomp'?'var(--blue)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">⚡ Recomp</button>
+      </div>
+    </div>
+
+    <!-- MACROS -->
+    <div class="rcard">
+      <div class="rcard-t">Daily targets</div>
+      <div class="macro-row">
+        <div class="macro-card"><div class="mc-v" style="color:var(--red);">${(g.calories||0).toLocaleString()}</div><div class="mc-l">Calories</div><div class="mc-s">${g.calorieGuidance||''}</div></div>
+        <div class="macro-card"><div class="mc-v" style="color:var(--green);">${g.protein||0}g</div><div class="mc-l">Protein</div><div class="mc-s">${user.weight?((g.protein||0)/user.weight).toFixed(1)+'g/kg':''}</div></div>
+        <div class="macro-card"><div class="mc-v" style="color:var(--amber);">${g.carbs||0}g</div><div class="mc-l">Carbs</div><div class="mc-s">${g.fat||0}g fat</div></div>
+      </div>
+      ${g.adjustRule?`<div style="font-size:12px;color:var(--t3);padding-top:4px;line-height:1.5;border-top:1px solid var(--b1);padding-top:10px;">${g.adjustRule}</div>`:''}
+    </div>
+
+    <!-- MUSCLE BREAKDOWN -->
+    <div class="rcard">
+      <div class="rcard-t">Muscle breakdown</div>
+      ${mHTML||'<div style="color:var(--t3);font-size:13px;">Not enough detail visible in photo</div>'}
+    </div>
+
+    <!-- WEAK SPOTS + STRENGTHS -->
+    <div class="rcard">
+      <div class="rcard-t">Weak spots</div>
+      <div style="margin-bottom:${strHTML?'14px':'0'}">${weakTags||'<span style="color:var(--t3);font-size:13px;">None detected</span>'}</div>
+      ${strHTML?`<div class="rcard-t" style="margin-top:12px;">Strengths</div>${strHTML}`:''}
+    </div>
+
+    <!-- MEAL PLAN -->
+    ${mealHTML?`<div class="rcard"><div class="rcard-t">Your meal plan</div>${mealHTML}</div>`:''}
+
+    <!-- WORKOUT -->
+    ${workoutHTML}
+
+    <!-- SUPPLEMENTS -->
+    ${supHTML?`<div class="rcard"><div class="rcard-t">Supplement advice</div>${supHTML}</div>`:''}
+
+    <!-- FULL ASSESSMENT -->
+    <div class="rcard">
+      <div class="rcard-t">Full assessment</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.7;">${r.summary||''}</div>
+    </div>
+
+    <button style="width:100%;padding:15px;border-radius:14px;background:var(--bg2);border:1px solid var(--b2);color:var(--t1);font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;" onclick="showScreen('scan')">+ New scan</button>
+    <button style="width:100%;padding:13px;border-radius:12px;background:transparent;border:1px solid var(--b2);color:var(--t2);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="showScreen('home')">← Home</button>
+
+  </div>`;
+}
+
+// ── GOAL OVERRIDE ──────────────────────────────────────
+let pendingOverridePhase = null;
+
+function overrideGoal(phase) {
+  const r = window._currentScanResult;
+  if(!r) return;
+  const g = r.goalDecision || {};
+  const currentPhase = g.phase;
+
+  // Tapping the current AI recommendation — no override needed
+  if(phase === currentPhase) return;
+
+  pendingOverridePhase = phase;
+
+  const phName = phase==='bulk'?'Bulk 🍗':phase==='cut'?'Cut 🔥':'Recomp ⚡';
+  const aiName = currentPhase==='bulk'?'Bulk 🍗':currentPhase==='cut'?'Cut 🔥':'Recomp ⚡';
+
+  // Parse body fat correctly — "12-14%" → take the LOWER number = 12
+  // "12–14%" or "12-14%" or "~13%" all handled
+  const bfRaw = r.bodyFatEstimate || '15%';
+  const bfNums = bfRaw.match(/\d+(\.\d+)?/g) || ['15'];
+  const bf = parseFloat(bfNums[0]); // use the first (lower) number
+
+  // Always show a genuine honest warning — never say "good call"
+  let warnObj;
+  if(phase === 'bulk') {
+    if(bf > 18) {
+      // Actually fat — cutting first makes sense
+      warnObj = {
+        warn: `You're at an estimated ${bfRaw} body fat. Bulking at this level means more of your surplus goes to fat rather than muscle. Your insulin sensitivity isn't optimal for a lean bulk right now.`,
+        sure: 'Most coaches recommend getting to 12–15% before bulking for the best muscle-to-fat ratio. But if you still want to bulk, we\'ll build the cleanest possible plan — just keep the surplus moderate (250–300 kcal max).'
+      };
+    } else if(bf <= 15) {
+      // Already lean — bulk is genuinely a great choice
+      warnObj = {
+        warn: `At ${bfRaw} body fat, you're actually in a great position to bulk — the AI recommended ${aiName} but bulking is a smart choice at your leanness. You can gain muscle with minimal fat at this body fat level.`,
+        sure: 'A lean bulk at your body fat will be very efficient. Keep surplus at 250–350 kcal, aim for max 0.5kg/week gain, and watch your physique transform. Good decision.'
+      };
+    } else {
+      // Middle ground
+      warnObj = {
+        warn: `At ${bfRaw} body fat, a bulk is workable — the AI suggested ${aiName} but bulking isn't a bad choice here. Just keep your surplus tight to minimise unnecessary fat gain.`,
+        sure: 'Moderate surplus only (250–300 kcal). If you start gaining more than 0.5kg/week, pull back. We\'ll build the plan around your goal.'
+      };
+    }
+  } else if(phase === 'cut') {
+    const hasMusc = (r.muscles||[]).some(m => m.status==='good'||m.status==='elite');
+    if(!hasMusc && bf < 12) {
+      // Lean but no muscle — will look skinny not shredded
+      warnObj = {
+        warn: `At ${bfRaw} body fat but your muscle development is still early. Cutting now will make you look skinny and flat — there's not enough muscle underneath to reveal. The AI recommended ${aiName} for this reason.`,
+        sure: 'Build a muscle base first through bulking or recomp — then a cut will actually make you look shredded. Cutting now will just make you smaller, not more defined.'
+      };
+    } else if(!hasMusc) {
+      // Moderate-high bf, no muscle
+      warnObj = {
+        warn: `Your muscle development is still building. Cutting without a solid muscle base means you\'ll look thinner and flatter, not shredded. The AI recommended ${aiName} because there isn\'t enough muscle to reveal yet.`,
+        sure: 'Building muscle first and then cutting will give you a dramatically better result. If you still want to cut, eat 2.5g/kg protein and keep lifting heavy to protect what you have.'
+      };
+    } else if(bf < 12) {
+      // Lean WITH muscle — valid but warn about muscle loss risk
+      warnObj = {
+        warn: `You're already very lean at ${bfRaw}. Cutting further risks real muscle loss — there's limited fat left to lose safely and your body will start eating muscle for fuel.`,
+        sure: 'If you cut, keep deficit tiny (200–250 kcal max), protein very high (2.8–3.1g/kg), and lift heavy. Stop if strength drops more than 5% on main lifts.'
+      };
+    } else {
+      // Has muscle, reasonable bf — valid cut
+      warnObj = {
+        warn: `The AI recommended ${aiName} but a cut is a valid choice. At ${bfRaw} with your muscle base, cutting will improve your definition and vascularity noticeably.`,
+        sure: 'Keep protein at 2.3–2.6g/kg, maintain your strength in the gym, aim for 0.5–0.75% bodyweight loss per week. We\'ll build the full cut plan.'
+      };
+    }
+  } else {
+    // Recomp
+    const isAdv = (r.scoreLabel||'').toLowerCase().includes('advanced')||(r.scoreLabel||'').toLowerCase().includes('elite');
+    if(isAdv) {
+      warnObj = {
+        warn: `As an ${r.scoreLabel||'advanced'} trainee, recomp is very slow — your body is already well-adapted. A dedicated bulk or cut will produce faster, more visible results than maintenance eating.`,
+        sure: 'If recomp is what you want, you need to be extremely consistent with both diet and training. Expect slow progress. We\'ll still build the best plan possible.'
+      };
+    } else {
+      warnObj = {
+        warn: `The AI recommended ${aiName}, but recomp is a perfectly valid choice — especially if you don\'t want to change your weight significantly. It works best with consistent progressive training.`,
+        sure: 'Eat at maintenance, keep protein high (2.0g/kg), train hard and progressively. You\'ll slowly swap fat for muscle over time. We\'ll build the plan.'
+      };
+    }
+  }
+
+  document.getElementById('ov-title').textContent = 'Override to ' + phName + '?';
+  document.getElementById('ov-warning').innerHTML = '<strong style="color:var(--amber);">AI said: ' + aiName + '</strong><br/><br/>' + warnObj.warn;
+  document.getElementById('ov-sure').textContent = warnObj.sure;
+
+  // Smooth slide-up animation
+  const modal = document.getElementById('override-modal');
+  const sheet = document.getElementById('ov-sheet');
+  modal.style.display = 'flex';
+  // Force reflow then animate
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      modal.style.background = 'rgba(0,0,0,0.88)';
+      sheet.style.transform = 'translateY(0)';
+    });
+  });
+}
+
+function closeOverrideModal(silent) {
+  const modal = document.getElementById('override-modal');
+  const sheet = document.getElementById('ov-sheet');
+  if(!modal || modal.style.display === 'none') return;
+  if(silent) {
+    modal.style.display = 'none';
+    if(sheet) sheet.style.transform = 'translateY(100%)';
+    pendingOverridePhase = null;
+    return;
+  }
+  modal.style.background = 'rgba(0,0,0,0)';
+  if(sheet) sheet.style.transform = 'translateY(100%)';
+  setTimeout(() => {
+    modal.style.display = 'none';
+    pendingOverridePhase = null;
+  }, 350);
+}
+
+function confirmOverride() {
+  if(!pendingOverridePhase) return;
+  closeOverrideModal();
+
+  // Force the user's goal to the override phase and re-run the full AI scan
+  const prevLook = user.look;
+  user.look = pendingOverridePhase === 'bulk' ? 'big' : pendingOverridePhase === 'cut' ? 'shredded' : 'athletic';
+  user._overridePhase = pendingOverridePhase; // tell AI exactly which phase to use
+
+  // Show loading screen
+  showScreen('loading');
+  document.getElementById('load-msg').textContent = 'Re-analysing for ' + (pendingOverridePhase === 'bulk' ? 'Bulk' : pendingOverridePhase === 'cut' ? 'Cut' : 'Recomp') + '...';
+
+  // Re-run scan with the same photos
+  runScanWithGoal(pendingOverridePhase).finally(() => {
+    user.look = prevLook; // restore original preference
+    delete user._overridePhase;
+  });
+}
+
+async function runScanWithGoal(forcedPhase) {
+  const included = ANGLES.filter(a => photos[a]);
+  if(!included.length) { showScreen('results'); return; }
+
+  const blocks = [];
+  included.forEach(a => {
+    blocks.push({ type:'image', source:{ type:'base64', media_type:'image/jpeg', data: photos[a].base64 } });
+    blocks.push({ type:'text', text: `[${a} view]` });
+  });
+
+  const phaseDesc = forcedPhase === 'bulk' ? 'Lean Bulk (calorie surplus, build maximum muscle mass)'
+    : forcedPhase === 'cut' ? 'Cut (calorie deficit, lose fat, reveal muscle and vascularity)'
+    : 'Body Recomposition (maintenance calories, build muscle while losing fat)';
+
+  const lookMap = { shredded:'Shredded & veiny', big:'Big & muscular', athletic:'Athletic & lean', ai:'AI decides' };
+  const userCtx = user.age && user.weight && user.height
+    ? `User stats: ${user.age}yo, ${user.weight}kg, ${user.height}cm, ${user.sex}, activity multiplier ${user.activity}, ${user.exp||'intermediate'} trainer.`
+    : 'No stats provided.';
+
+  let li = 0;
+  const LMSGS2 = [
+    'Re-analysing physique for ' + forcedPhase + '...',
+    'Building ' + forcedPhase + ' meal plan...',
+    'Designing workout for ' + forcedPhase + '...',
+    'Calculating new calorie targets...',
+    'Almost done...'
+  ];
+  const lt = setInterval(() => {
+    li = (li+1) % LMSGS2.length;
+    const el = document.getElementById('load-msg');
+    if(el) el.textContent = LMSGS2[li];
+  }, 2000);
+
+  blocks.push({ type:'text', text:`You are an elite physique analyst and personal trainer. ${userCtx}
+The user has CHOSEN to ${phaseDesc}. This is their decision — respect it and build the best possible plan for this goal.
+Do NOT recommend a different phase. Build everything around ${forcedPhase.toUpperCase()}.
+
+CRITICAL SCORING — thickness/mass = score, NOT leanness. Lean but flat abs = "fair" not "good".
+
+Respond ONLY raw JSON:
+{"overallScore":<1.0-10.0>,"scoreLabel":"<Beginner|Developing|Intermediate|Advanced|Elite>","bodyFatEstimate":"<e.g. 12-15%>","bodyFatCategory":"<low|moderate|high>","muscleMassEstimate":"<e.g. 62.5 — single number kg using weight×(1-bf/100)>","bmiEstimate":"<single number e.g. 22.4>","bmiCategory":"<Underweight|Normal|Overweight>","bodyType":"<type>","summary":"<3 honest sentences>","honestTalk":"<1-2 sentences of honest PT advice specific to doing a ${forcedPhase} with their physique>","goalDecision":{"phase":"${forcedPhase}","reasoning":"<2-3 sentences why this ${forcedPhase} plan is built for them specifically>","override":"","duration":"<weeks>","calories":<number>,"protein":<grams>,"carbs":<grams>,"fat":<grams>,"calorieGuidance":"<e.g. +300 above maintenance>","adjustRule":"<how to adjust weekly>"},"muscles":[{"name":"<group>","score":<0-100>,"status":"<weak|fair|good|elite>","note":"<honest>"}],"weakSpots":["<muscle>"],"strengths":["<real strength>"],"mealPlan":[{"meal":"<name>","time":"<time>","foods":["<food + amount>"],"protein":<g>,"calories":<kcal>}],"workoutPlan":[{"day":"<Mon|Tue|Wed|Thu|Fri|Sat|Sun>","focus":"<focus>","target":"<weak spot>","exercises":[{"name":"<exercise>","sets":"<sets>","rest":"<rest>","note":"<why>"}]}],"supplements":[{"name":"<supp>","dose":"<dose>","timing":"<when>","evidence":"<high|moderate|low>","note":"<note>"}],"weeklyAdjust":"<weekly adjustment rule>"}
+6-8 muscles, 4-5 meals, 4-5 workout days, 2-3 supplements. Concise. Complete valid JSON.` });
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-calls': 'true' },
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4000, messages:[{ role:'user', content:blocks }] })
+    });
+    clearInterval(lt);
+    const data = await resp.json();
+    if(data.error) throw new Error(data.error.message);
+    let raw = ((data.content||[])[0]||{}).text||'';
+    raw = raw.replace(/```json|```/g,'').trim();
+    let r;
+    try { r = JSON.parse(raw); }
+    catch(pe) {
+      let o=0,oa=0;
+      for(const ch of raw){if(ch==='{')o++;else if(ch==='}')o--;else if(ch==='[')oa++;else if(ch===']')oa--;}
+      let fx=raw.replace(/,\s*$/,'');
+      while(oa>0){fx+=']';oa--;}while(o>0){fx+='}';o--;}
+      r=JSON.parse(fx);
+    }
+    if(!r.overallScore && r.overallScore!==0) throw new Error('Bad format');
+    renderResults(r, included, 'scan');
+    saveHistory(r);
+    showScreen('results');
+    document.getElementById('results-scroll').scrollTo(0,0);
+  } catch(err) {
+    clearInterval(lt);
+    document.getElementById('results-content').innerHTML = `
+      <div style="margin:20px 0;">
+        <div style="background:rgba(255,43,43,0.07);border:1px solid rgba(255,43,43,0.2);border-radius:14px;padding:20px;">
+          <div style="font-size:15px;font-weight:500;color:#ff6666;margin-bottom:6px;">Re-scan failed</div>
+          <div style="font-size:12px;color:var(--t3);margin-bottom:14px;">${err.message||'Please try again.'}</div>
+          <button class="bigbtn" onclick="showScreen('scan')" style="font-size:14px;padding:13px;">← Try again</button>
+        </div>
+      </div>`;
+    showScreen('results');
+  }
+}
+function saveHistory(r) {
+  const fp=photos['Front']||photos[Object.keys(photos)[0]];
+  const g=r.goalDecision||{};
+  const entry = {
+    date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'}),
+    angles:Object.keys(photos).join('+'),
+    score:r.overallScore,
+    photo:fp?fp.dataUrl:null,
+    phase:g.phase||'',
+    label:r.scoreLabel||'',
+    calories:g.calories||0,
+    protein:g.protein||0,
+    bodyFat:r.bodyFatEstimate||'',
+    bodyFatCategory:r.bodyFatCategory||'',
+    fullResult: r
+  };
+  history.unshift(entry);
+  if(history.length>20)history=history.slice(0,20);
+  try{localStorage.setItem('il_v5',JSON.stringify(history));}catch(e){}
+  renderHomeRecents();
+}
+function renderHistory() {
+  const el=document.getElementById('history-grid');
+  if(!history.length){ el.innerHTML=`<div style="grid-column:span 2;padding:48px 20px;text-align:center;color:var(--t3);font-size:13px;">No scans yet — do your first scan!</div>`; return; }
+  const phCol=ph=>ph==='bulk'?'var(--green)':ph==='cut'?'var(--red)':'var(--blue)';
+  el.innerHTML=history.map((e,i)=>`
+    <div class="hcard" onclick="openHistoryScan(${i})" style="position:relative;">
+      ${e.photo?`<img src="${e.photo}" alt="scan"/>`:`<div style="width:100%;height:120px;background:var(--bg3);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" viewBox="0 0 24 24" style="stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round;"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>`}
+      <div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);border-radius:8px;padding:3px 8px;font-size:11px;color:rgba(255,255,255,0.7);backdrop-filter:blur(8px);">Tap to view</div>
+      <div class="hcard-body">
+        <div class="hcard-score" style="color:${e.score>=7?'var(--green)':e.score>=5?'var(--amber)':'var(--red)'}">${e.score?e.score.toFixed(1):'?'}</div>
+        <div class="hcard-meta">${e.label||''}</div>
+        <div class="hcard-meta">${e.angles} · ${e.date}</div>
+        ${e.phase?`<div style="font-size:11px;font-weight:600;color:${phCol(e.phase)};margin-top:4px;">${e.phase.toUpperCase()}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+function renderHomeRecents() {
+  if(!history.length)return;
+  const el=document.getElementById('home-recents');
+  const phCol=ph=>ph==='bulk'?'var(--green)':ph==='cut'?'var(--red)':'var(--blue)';
+  el.innerHTML=history.slice(0,5).map((e,i)=>`
+    <div onclick="openHistoryScan(${i})" style="flex-shrink:0;width:110px;background:var(--bg2);border:1px solid var(--b1);border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;" onmouseenter="this.style.borderColor='var(--red)'" onmouseleave="this.style.borderColor='var(--b1)'">
+      ${e.photo?`<img src="${e.photo}" style="width:100%;height:100px;object-fit:cover;display:block;" />`:`<div style="width:100%;height:100px;background:var(--bg3);display:flex;align-items:center;justify-content:center;"><svg width="24" height="24" viewBox="0 0 24 24" style="stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round;"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>`}
+      <div style="padding:9px 10px;">
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:${e.score>=7?'var(--green)':e.score>=5?'var(--amber)':'var(--red)'};">${e.score?e.score.toFixed(1):'?'}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:1px;">${e.date}</div>
+        ${e.phase?`<div style="font-size:10px;font-weight:600;color:${phCol(e.phase)};margin-top:3px;">${e.phase.toUpperCase()}</div>`:''}
+      </div>
+    </div>`).join('')
+    +`<div style="flex-shrink:0;width:110px;height:145px;background:var(--bg2);border:1.5px dashed var(--b2);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;" onclick="showScreen('scan')">
+      <svg width="20" height="20" viewBox="0 0 24 24" style="stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span style="font-size:11px;color:var(--t3);">New scan</span>
+    </div>`;
+}
+
+function openHistoryScan(idx) {
+  const entry = history[idx];
+  if(!entry) return;
+  if(!entry.fullResult) {
+    // Old scan — show what we have as a summary card
+    const fromHistory = document.getElementById('screen-history').classList.contains('active');
+    const backTo = fromHistory ? 'history' : 'home';
+    const phCol = entry.phase==='bulk'?'var(--green)':entry.phase==='cut'?'var(--red)':'var(--blue)';
+    const bb = document.querySelector('#screen-results .back-btn');
+    if(bb){ bb.innerHTML=`<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--t2);fill:none;stroke-width:2;stroke-linecap:round;"><polyline points="15 18 9 12 15 6"/></svg>${backTo==='history'?'← History':'← Home'}`; bb.onclick=()=>showScreen(backTo); }
+    document.getElementById('results-content').innerHTML = `<div class="fade-in" style="padding-top:4px;">
+      <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:16px;padding:20px;margin-bottom:12px;text-align:center;">
+        ${entry.photo?`<img src="${entry.photo}" style="width:100%;max-height:280px;object-fit:cover;border-radius:12px;margin-bottom:14px;" />`:''}
+        <div style="font-family:'Syne',sans-serif;font-size:48px;font-weight:900;color:${entry.score>=7?'var(--green)':entry.score>=5?'var(--amber)':'var(--red)'};">${entry.score?entry.score.toFixed(1):'?'}</div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:4px;">${entry.label||'Scan result'}</div>
+        <div style="font-size:12px;color:var(--t3);margin-bottom:12px;">${entry.angles||'Front'} · ${entry.date}</div>
+        ${entry.phase?`<div style="display:inline-block;padding:7px 18px;border-radius:20px;background:${phCol}22;color:${phCol};border:1px solid ${phCol}44;font-size:14px;font-weight:600;">${entry.phase.toUpperCase()}</div>`:''}
+      </div>
+      <div style="background:var(--bg3);border-radius:12px;padding:14px 16px;text-align:center;">
+        <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:12px;">This scan was saved before full results were stored. Do a new scan to get your complete diet + workout plan.</div>
+        <button class="bigbtn" onclick="showScreen('scan')" style="padding:13px;">New scan →</button>
+      </div>
+    </div>`;
+    showScreen('results');
+    document.getElementById('results-scroll').scrollTo(0,0);
+    return;
+  }
+  const fromHistory = document.getElementById('screen-history').classList.contains('active');
+  renderResults(entry.fullResult, (entry.angles||'Front').split('+'), fromHistory ? 'history' : 'home');
+  showScreen('results');
+  document.getElementById('results-scroll').scrollTo(0,0);
+}
+
+// ── HOME STATS ─────────────────────────────────────────
+function updateHomeStats() {
+  const name='Hey 👋';
+  document.getElementById('home-greet').textContent=name;
+  const scanEl = document.getElementById('h-scans');
+  if(scanEl) scanEl.textContent = history.length;
+  if(history.length) {
+    const l=history[0];
+    if(l.score){ document.getElementById('h-score').textContent=l.score.toFixed(1); document.getElementById('h-score').style.color=l.score>=7?'var(--green)':l.score>=5?'var(--amber)':'var(--red)'; document.getElementById('h-score-sub').textContent=l.label||''; }
+    if(l.phase){ const phCol=l.phase==='bulk'?'var(--green)':l.phase==='cut'?'var(--red)':'var(--blue)'; document.getElementById('h-goal').textContent=l.phase.toUpperCase(); document.getElementById('h-goal').style.color=phCol; document.getElementById('h-goal-sub').textContent=l.date||''; }
+    if(l.calories){ document.getElementById('h-cals').textContent=l.calories.toLocaleString(); }
+    if(l.protein){ document.getElementById('h-protein').textContent=l.protein+'g'; }
+    if(l.bodyFat){
+      const bfEl=document.getElementById('h-bf');
+      if(bfEl){ bfEl.textContent=l.bodyFat; bfEl.style.color=l.bodyFatCategory==='high'?'var(--red)':l.bodyFatCategory==='low'?'var(--green)':'var(--amber)'; }
+      const bfSubEl=document.getElementById('h-bf-sub');
+      if(bfSubEl) bfSubEl.textContent=l.bodyFatCategory==='high'?'High fat':l.bodyFatCategory==='low'?'Lean':'Moderate';
+    }
+    // Also try from fullResult if not in entry
+    if(!l.calories && l.fullResult && l.fullResult.goalDecision) {
+      const g = l.fullResult.goalDecision;
+      if(g.calories) document.getElementById('h-cals').textContent=g.calories.toLocaleString();
+      if(g.protein) document.getElementById('h-protein').textContent=g.protein+'g';
+    }
+  }
+}
+
+// ── INIT ───────────────────────────────────────────────
+// Load history from any saved key (handles version changes)
+if(!history.length) {
+  ['il_v4','il_v3','il_history2','il_history'].forEach(key => {
+    if(!history.length) {
+      try {
+        const old = JSON.parse(localStorage.getItem(key)||'null');
+        if(old && old.length) history = old;
+      } catch(e){}
+    }
+  });
+  // Save into new key
+  if(history.length) try { localStorage.setItem('il_v5', JSON.stringify(history)); } catch(e){}
+}
+if(localStorage.getItem('il_user')) {
+  updateHomeStats();
+  renderHomeRecents();
+  renderProfileCard();
+  showScreen('home');
+}
+</script>
+</body>
+</html>
