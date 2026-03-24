@@ -1050,45 +1050,16 @@ function renderResults(r, angles, backTo) {
       </div>
     </div>
 
-    <!-- HONEST TALK -->
-    ${r.honestTalk?`<div class="honest-box"><div class="hb-title"><svg width="14" height="14" viewBox="0 0 24 24" style="stroke:var(--red);fill:none;stroke-width:2;stroke-linecap:round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Honest PT talk</div><div class="hb-body">${r.honestTalk}</div></div>`:''}
-
-    <!-- PHASE -->
-    <div class="rcard" id="goal-decision-card" style="background:${phBg};border-color:${phCol}33;">
-      <div class="rcard-t">AI recommendation</div>
-      <div style="font-family:'Syne',sans-serif;font-size:30px;font-weight:900;color:${phCol};margin-bottom:6px;">${phName}</div>
-      <div style="font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:12px;">${r.phaseReason||''}</div>
-      <div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-weight:500;">Not what you want? Override →</div>
-      <div style="display:flex;gap:7px;">
-        <button onclick="overrideGoal('bulk')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${phase==='bulk'?'var(--green)':'var(--b2)'};background:${phase==='bulk'?'var(--green2)':'transparent'};color:${phase==='bulk'?'var(--green)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🍗 Bulk</button>
-        <button onclick="overrideGoal('cut')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${phase==='cut'?'var(--red)':'var(--b2)'};background:${phase==='cut'?'var(--red2)':'transparent'};color:${phase==='cut'?'var(--red)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🔥 Cut</button>
-        <button onclick="overrideGoal('recomp')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${phase==='recomp'?'var(--blue)':'var(--b2)'};background:${phase==='recomp'?'var(--blue2)':'transparent'};color:${phase==='recomp'?'var(--blue)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">⚡ Recomp</button>
-      </div>
-    </div>
-
-    <!-- STRENGTHS + WEAK SPOTS (always visible as teaser) -->
-    <div class="rcard">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div>
-          <div class="rcard-t">Strengths</div>
-          <div>${strTags||'<span style="color:var(--t3);font-size:12px;">Scan more angles</span>'}</div>
-        </div>
-        <div>
-          <div class="rcard-t">Weak spots</div>
-          <div>${weakTags||'<span style="color:var(--t3);font-size:12px;">None detected</span>'}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- FULL ASSESSMENT -->
-    <div class="rcard">
-      <div class="rcard-t">Full assessment</div>
-      <div style="font-size:13px;color:var(--t2);line-height:1.7;">${r.summary||''}</div>
-    </div>
-
     ${!isPremium() ? `
+    <!-- PAYWALL — blur everything below score -->
     <div class="paywall-wrap">
       <div class="paywall-blur">
+        <div class="honest-box" style="margin-bottom:10px;"><div class="hb-title">Honest PT talk</div><div class="hb-body">${r.honestTalk||''}</div></div>
+        <div class="rcard" style="margin-bottom:10px;">
+          <div class="rcard-t">AI recommendation</div>
+          <div style="font-size:24px;font-weight:900;color:${phCol};">${phName}</div>
+          <div style="font-size:12px;color:var(--t2);margin-top:6px;">${r.phaseReason||''}</div>
+        </div>
         <div class="rcard" style="margin-bottom:10px;">
           <div class="rcard-t">Muscle breakdown</div>
           <div class="muscle-grid">
@@ -1103,12 +1074,30 @@ function renderResults(r, angles, backTo) {
       <div class="paywall-overlay">
         <div style="font-size:36px;margin-bottom:12px;">🔒</div>
         <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:8px;">Your report is ready</div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;max-width:260px;">See your full muscle breakdown, improvement tips & phase plan</div>
-        <button class="unlock-btn" onclick="startCheckout()">Unlock — £4.99/month</button>
-        <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:10px;">Cancel anytime</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;max-width:260px;">Unlock your full muscle breakdown, phase plan & improvement tips</div>
+        <button class="unlock-btn" onclick="startCheckout()">Unlock Full Report</button>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:10px;">Cancel anytime · £4.99/month</div>
       </div>
     </div>
     ` : `
+    ${r.honestTalk?`<div class="honest-box"><div class="hb-title"><svg width="14" height="14" viewBox="0 0 24 24" style="stroke:var(--red);fill:none;stroke-width:2;stroke-linecap:round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Honest PT talk</div><div class="hb-body">${r.honestTalk}</div></div>`:''}
+    <div class="rcard" id="goal-decision-card" style="background:${phBg};border-color:${phCol}33;">
+      <div class="rcard-t">AI recommendation</div>
+      <div style="font-family:'Syne',sans-serif;font-size:30px;font-weight:900;color:${phCol};margin-bottom:6px;">${phName}</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:12px;">${r.phaseReason||''}</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-weight:500;">Not what you want? Override →</div>
+      <div style="display:flex;gap:7px;">
+        <button onclick="overrideGoal('bulk')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${phase==='bulk'?'var(--green)':'var(--b2)'};background:${phase==='bulk'?'var(--green2)':'transparent'};color:${phase==='bulk'?'var(--green)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🍗 Bulk</button>
+        <button onclick="overrideGoal('cut')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${phase==='cut'?'var(--red)':'var(--b2)'};background:${phase==='cut'?'var(--red2)':'transparent'};color:${phase==='cut'?'var(--red)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🔥 Cut</button>
+        <button onclick="overrideGoal('recomp')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${phase==='recomp'?'var(--blue)':'var(--b2)'};background:${phase==='recomp'?'var(--blue2)':'transparent'};color:${phase==='recomp'?'var(--blue)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">⚡ Recomp</button>
+      </div>
+    </div>
+    <div class="rcard">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div><div class="rcard-t">Strengths</div><div>${strTags||'<span style="color:var(--t3);font-size:12px;">Scan more angles</span>'}</div></div>
+        <div><div class="rcard-t">Weak spots</div><div>${weakTags||'<span style="color:var(--t3);font-size:12px;">None detected</span>'}</div></div>
+      </div>
+    </div>
     <div class="rcard">
       <div class="rcard-t">Muscle breakdown</div>
       <div class="muscle-grid">
@@ -1118,6 +1107,10 @@ function renderResults(r, angles, backTo) {
     <div class="rcard">
       <div class="rcard-t">How to improve</div>
       ${(r.tips||[]).map(t=>`<div class="tip-card"><div class="tip-muscle-pill">${t.muscle}</div><div class="tip-text">${t.tip}</div></div>`).join('')}
+    </div>
+    <div class="rcard">
+      <div class="rcard-t">Full assessment</div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.7;">${r.summary||''}</div>
     </div>
     `}
 
