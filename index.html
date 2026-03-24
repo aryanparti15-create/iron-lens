@@ -292,6 +292,30 @@ button:active{opacity:0.85;}
 #override-modal{cursor:pointer;}
 #override-modal > div{cursor:default;}
 
+/* ── MUSCLE GRID (Umax style) ── */
+.muscle-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.muscle-card{border-radius:14px;padding:14px 12px;position:relative;overflow:hidden;border:1px solid transparent;}
+.muscle-card.weak{background:rgba(255,43,43,0.08);border-color:rgba(255,43,43,0.18);}
+.muscle-card.fair{background:rgba(245,158,11,0.07);border-color:rgba(245,158,11,0.18);}
+.muscle-card.good{background:rgba(34,197,94,0.07);border-color:rgba(34,197,94,0.18);}
+.muscle-card.elite{background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.22);}
+.mc-name{font-size:12px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;}
+.mc-score{font-family:'Syne',sans-serif;font-size:32px;font-weight:900;line-height:1;margin-bottom:6px;}
+.mc-score.weak{color:var(--red);}
+.mc-score.fair{color:var(--amber);}
+.mc-score.good{color:var(--green);}
+.mc-score.elite{color:#4ade80;}
+.mc-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;margin-bottom:8px;}
+.mc-badge.weak{background:rgba(255,43,43,0.15);color:var(--red);}
+.mc-badge.fair{background:rgba(245,158,11,0.15);color:var(--amber);}
+.mc-badge.good{background:rgba(34,197,94,0.15);color:var(--green);}
+.mc-badge.elite{background:rgba(74,222,128,0.15);color:#4ade80;}
+.mc-note{font-size:11px;color:rgba(255,255,255,0.38);line-height:1.45;}
+/* ── TIP CARDS ── */
+.tip-card{display:flex;gap:10px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid var(--b1);margin-bottom:8px;align-items:flex-start;}
+.tip-card:last-child{margin-bottom:0;}
+.tip-muscle-pill{flex-shrink:0;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(255,43,43,0.12);color:var(--red);border:1px solid rgba(255,43,43,0.2);white-space:nowrap;margin-top:1px;}
+.tip-text{font-size:13px;color:rgba(255,255,255,0.65);line-height:1.55;}
 /* ── AUTH SCREEN ── */
 .auth-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;}
 .auth-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 56px) 28px 36px;text-align:center;position:relative;min-height:340px;}
@@ -832,99 +856,29 @@ async function runScan() {
   const lookMap = { shredded:'Shredded & veiny — visible abs, vascularity, definition', big:'Big & muscular — maximum size, fullness, mass', athletic:'Athletic & lean — balanced muscle with visible definition', ai:'Pure AI decision based on body' };
   const userCtx = user.age&&user.weight&&user.height ? `User stats: ${user.age}yo, ${user.weight}kg, ${user.height}cm, ${user.sex}, activity multiplier ${user.activity}, ${user.exp} trainer. Aesthetic goal: ${lookMap[user.look]||'AI decides'}.` : `No stats provided. Aesthetic goal: ${lookMap[user.look]||'AI decides'}.`;
 
-  blocks.push({type:'text',text:`You are an elite physique analyst, sports scientist, and personal trainer. ${userCtx} Analyse ${included.length} photo(s): ${included.join(', ')}.
+  blocks.push({type:'text',text:`You are an elite physique analyst and sports scientist. ${userCtx} Analyse ${included.length} photo(s): ${included.join(', ')}.
 
-CRITICAL RULES:
-1. GOAL DECISION — AI decides bulk/cut/recomp based on BOTH physique AND aesthetic goal:
-- "Shredded & veiny" + already has muscle (good/elite scores) → CUT (muscle is there, reveal it)
-- "Shredded & veiny" + no real muscle yet (mostly weak/fair) → RECOMP first, be honest — cutting without muscle = looking skinny not shredded
-- "Big & muscular" + lean (under 15% BF) → BULK (perfect time, go for it)
-- "Big & muscular" + moderate fat (15-20%) → BULK with tight surplus, warn about fat gain
-- "Big & muscular" + high fat (over 20%) → CUT first, then bulk, be honest
-- "Athletic & lean" + beginner → RECOMP (use the newbie gains window — can build AND lose fat simultaneously)
-- "Athletic & lean" + intermediate + low BF (under 13%) + has muscle → BULK (already lean, needs mass for athletic look)
-- "Athletic & lean" + intermediate + moderate/high BF → RECOMP or CUT
-- "Athletic & lean" + advanced + lean → BULK (at this stage needs mass not recomp)
-- AI decides + BF over 20% → CUT
-- AI decides + BF under 12% + has muscle → BULK  
-- AI decides + BF under 12% + little muscle → BULK (lean base, needs mass)
-- AI decides + beginner → RECOMP
-- AI decides + advanced + lean → BULK
-- AI decides + everything else → RECOMP
-2. MUSCLE SCORING — score = THICKNESS + MASS, NOT leanness. Lean but flat abs = "fair" not "good".
-3. CALORIES — use Mifflin-St Jeor if stats provided: Male BMR=(10×kg)+(6.25×cm)-(5×age)+5, Female=(10×kg)+(6.25×cm)-(5×age)-161. Multiply by activity ${user.activity||1.375}. Bulk=+300, Cut=-400, Recomp=maintenance.
-4. PROTEIN — Bulk: 1.8g/kg. Cut: 2.6g/kg. Recomp: 2.0g/kg.
-5. MEAL PLAN — real foods, specific. Not vague. e.g. "200g chicken breast, 150g rice, broccoli"
-6. WORKOUT SPLIT — pick from this database of 11 evidence-based splits. CHOOSE based on level + goal + weak muscle scores:
-
-━━ OVERRIDE RULES (check these FIRST before picking split) ━━
-- If 5+ muscles score below 45 → ALWAYS Full Body 3x (Split 1) regardless of stated experience. Can't specialise when everything is underdeveloped. The whole body is the weak point.
-- If back score<45 AND 3+ other muscles also below 45 → Full Body 3x. Do NOT give a pull-day specialisation — build the foundation first.
-- If back score<45 but rest of body is intermediate/advanced → Upper/Lower + Weak Point Day (Split 10) with back as the dedicated day (rows, pulldowns, deadlifts, pullovers — 18-22 sets back that day).
-- If person is stated intermediate/advanced but photo shows beginner-level development (most muscles weak/fair) → treat as beginner for split purposes. Be honest about this.
-
-━━ SPLIT DATABASE ━━
-SPLIT 1 — Full Body 3x (Mon/Wed/Fri)
-→ When: beginner, fat loss, time-limited. Sets/muscle/week: 6-10. RIR: 2-4.
-→ Each session: squat + hinge + horizontal push + horizontal pull + core (A/B alternating days)
-
-SPLIT 2 — Upper/Lower 4x (Mon/Tue/Thu/Fri)
-→ When: intermediate, balanced physique, 4 days. Sets/muscle/week: 10-16. RIR: 1-3.
-→ Upper1 / Lower1 / rest / Upper2 / Lower2
-
-SPLIT 3 — PPL 5-day (Mon–Fri)
-→ When: intermediate-advanced, 5 days, more volume needed than UL. Sets/muscle/week: 12-18. RIR: 0-2.
-→ Push / Pull / Legs / Push / Pull (legs again Sat optional)
-
-SPLIT 4 — PPL 6-day (classic Push/Pull/Legs x2)
-→ When: advanced, 6 days, multiple lagging muscles. Sets/muscle/week: 14-20. RIR: 0-2.
-→ Push / Pull / Legs / Push / Pull / Legs
-
-SPLIT 5 — Chest+Shoulders+Tris / Back+Bis / Legs (repeated 2x = 6-day)
-→ When: chest score<55 AND shoulder score<55 (both need volume together). Sets/muscle/week: 12-16. RIR: 0-2.
-→ Day1: Chest+Shoulders+Tris / Day2: Back+Bis / Day3: Legs — x2 per week
-
-SPLIT 6 — SHOULDER SPECIALISATION 5-day ⭐ USE THIS if shoulder score<45
-→ Shoulders hit 3x/week. Structure: Push heavy (chest+shoulder compound) / Pull / Legs / Shoulders isolation day (laterals, rear delts, press variations, face pulls — 15-20 sets shoulders only) / Upper light
-→ Sets/shoulders/week: 18-22. RIR: 0-2 on isolation, 1-2 on compounds.
-
-SPLIT 7 — ARMS SPECIALISATION 5-day ⭐ USE THIS if biceps OR triceps score<45
-→ Arms hit 3x/week. Structure: Chest+Tris / Back+Bis / Legs / Push / Dedicated Arms day (curls, extensions, forearms, cable work — 16-20 sets arms)
-→ Sets/arms/week: 16-20. RIR: 0-1 on isolation sets.
-
-SPLIT 8 — Arnold Split 6-day (Chest+Back / Shoulders+Arms / Legs)
-→ When: advanced, wants antagonist pairing (chest+back pumped together = blood flow synergy). Sets/muscle/week: 14-18. RIR: 0-2.
-→ Chest+Back / Shoulders+Arms / Legs — repeated 2x
-
-SPLIT 9 — 5-Day Hybrid (Push/Pull/Legs/Upper/Lower)
-→ When: intermediate-advanced, 5 days, wants frequency + volume. Sets/muscle/week: 12-18. RIR: 0-2.
-→ Push / Pull / Legs / Upper heavy compounds / Lower heavy compounds
-
-SPLIT 10 — Upper/Lower + WEAK POINT DAY (5-day)
-→ When: ONE specific muscle scores<45 and needs extra frequency. Sets/muscle/week: 14-18. RIR: 0-2.
-→ Upper / Lower / [WEAK MUSCLE ONLY DAY — 100% dedicated, 16-20 sets that muscle] / Upper / Lower
-
-SPLIT 11 — Cut Optimised Full Body 3x + 2 cardio days
-→ When: goal=cut. Volume reduced 20% from baseline, intensity preserved. Sets/muscle/week: 6-10. RIR: 1-2.
-→ Full Body / Cardio (cycling preferred over running) / Full Body / Cardio / Full Body. Cardio ≥6hrs from leg sessions.
-
-━━ VOLUME RULES ━━
-- Weekly sets per muscle = primary hypertrophy driver (dose-response proven). Distribute across sessions — never cram all volume into 1 session.
-- Weak muscle (score<50): 10-16 weekly direct sets, hit 2-3x/week minimum.
-- Strong muscle (score>70): maintain 6-10 weekly sets.
-- IMBALANCE RULES: anterior delts dominate → add 6-10 sets lateral+rear delt work, cut front-delt pressing 2-4 sets. Back lags chest → pull:push ≥1:1. Quads dominate → add RDL+hip hinge. Asymmetry visible → unilateral work first, weaker side first. No V-taper → lat-biased pulls 2-3x/week.
-
-━━ EFFORT + PROGRESSION ━━
-- Intermediate/Advanced hypertrophy: sets should reach 0-2 RIR (last rep very hard, could barely do 1-2 more). Isolation exercises (curls, laterals) can go to true failure occasionally. Compounds (squat, bench, deadlift) NEVER absolute failure — form breaks, injury risk.
-- Progression rule on EVERY exercise: "When you can exceed top of rep range by 1-2 clean reps → add 2-10% load next session."
-7. BE HONEST — if someone wants to be shredded but has no muscle, tell them. That's what a real PT does.
+RULES:
+1. SCORING — overall score = muscle thickness + mass + development, NOT leanness. Lean but flat = lower score. Score 1-10 with 1 decimal.
+2. MUSCLE SCORES — 0-100. Status: weak=under 40, fair=40-65, good=65-80, elite=80+. Judge by visible thickness, fullness and symmetry.
+3. PHASE DECISION:
+- Shredded goal + muscle present (good/elite) → cut
+- Shredded goal + no real muscle (weak/fair) → recomp (cutting without muscle base = looking skinny)
+- Big goal + lean BF under 15% → bulk
+- Big goal + BF over 20% → cut first, be honest
+- Athletic goal + beginner → recomp
+- Athletic goal + intermediate + lean → bulk
+- AI decides: BF over 20% → cut, BF under 12% + has muscle → bulk, beginner → recomp, else → recomp
+4. MUSCLE NOTES — be specific and honest. e.g. "Upper chest visibly underdeveloped, flat when relaxed" not just "needs work".
+5. TIPS — for each weak/fair muscle give 1 specific actionable tip. Name the exact exercise, sets, frequency. e.g. "Add 4x12 cable lateral raises 3x/week — side delts are getting zero direct work".
+6. BE HONEST — brutal and direct like a real PT who cares. No sugarcoating.
 
 Respond ONLY raw JSON, no markdown:
-{"overallScore":<1.0-10.0>,"scoreLabel":"<Beginner|Developing|Intermediate|Advanced|Elite>","bodyFatEstimate":"<e.g. 12-15%>","bodyFatCategory":"<low|moderate|high>","muscleMassEstimate":"<e.g. 62.5 — single number kg using weight×(1-bf/100)>","bmiEstimate":"<single number e.g. 22.4>","bmiCategory":"<Underweight|Normal|Overweight>","bodyType":"<type>","summary":"<3 honest sentences>","honestTalk":"<1-2 sentences of brutal honest PT advice — what they REALLY need to hear>","goalDecision":{"phase":"<bulk|cut|recomp>","reasoning":"<2-3 sentences explaining WHY this goal suits their body + aesthetic goal>","override":"<if AI disagrees with their aesthetic choice, explain honestly why. Empty string if AI agrees>","duration":"<weeks>","calories":<number>,"protein":<grams>,"carbs":<grams>,"fat":<grams>,"calorieGuidance":"<e.g. +300 above maintenance>","adjustRule":"<how to adjust weekly>"},"muscles":[{"name":"<group>","score":<0-100>,"status":"<weak|fair|good|elite>","note":"<honest>"}],"weakSpots":["<muscle>"],"strengths":["<real strength>"],"workoutSplit":{"name":"<e.g. Push Pull Legs>","frequency":<days_per_week>,"reasoning":"<2 sentences — WHY this split is scientifically best for their specific stats, level and weak spots>","structure":"<e.g. Mon: Push · Tue: Pull · Wed: Legs · Thu: Rest · Fri: Upper · Sat: Lower · Sun: Rest>"},"mealPlan":[{"meal":"<Breakfast|Lunch|Dinner|Snack|Pre-workout|Post-workout>","time":"<e.g. 7am>","foods":["<specific food + amount>"],"protein":<g>,"calories":<kcal>}],"workoutPlan":[{"day":"<Mon|Tue|Wed|Thu|Fri|Sat|Sun>","focus":"<e.g. Push — chest/shoulders/triceps>","target":"<weak spot this targets>","exercises":[{"name":"<exercise>","sets":"<e.g. 4x10>","rest":"<e.g. 90s>","note":"<why this exercise for their weak spot>"}]}],"supplements":[{"name":"<supplement>","dose":"<dose>","timing":"<when>","evidence":"<high|moderate|low>","note":"<why or why not>"}],"weeklyAdjust":"<how to adjust calories/training based on weekly progress>"}
-Include 6-8 muscles, 4-5 meals, 4-5 workout days, 2-3 supplements. Concise values. Complete valid JSON.`});
+{"overallScore":<1.0-10.0>,"scoreLabel":"<Beginner|Developing|Intermediate|Advanced|Elite>","bodyFatEstimate":"<e.g. 12-15%>","bodyFatCategory":"<low|moderate|high>","muscleMassEstimate":"<single number kg>","bmiEstimate":"<single number>","bmiCategory":"<Underweight|Normal|Overweight>","bodyType":"<e.g. Ectomorph|Mesomorph|Endomorph>","summary":"<3 honest sentences about overall physique>","honestTalk":"<1-2 sentences brutal honest PT advice — what they REALLY need to hear>","phase":"<bulk|cut|recomp>","phaseReason":"<2 sentences why this phase suits their body>","muscles":[{"name":"<group>","score":<0-100>,"status":"<weak|fair|good|elite>","note":"<honest specific 1 sentence>"}],"strengths":["<2-3 real strengths>"],"weakSpots":["<2-3 real weaknesses>"],"tips":[{"muscle":"<muscle name>","tip":"<specific actionable tip with exercise name, sets, frequency>"}]}
+Include 6-8 muscles, 3-5 tips for weakest muscles. Complete valid JSON.`});
 
   try {
-    const resp=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:5500,messages:[{role:'user',content:blocks}]})});
+    const resp=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:blocks}]})});
     clearInterval(lt);
     const data=await resp.json();
     if(data.error)throw new Error(data.error.message);
@@ -1005,160 +959,84 @@ function switchWorkoutDay(idx) {
 function renderResults(r, angles, backTo) {
   backTo = backTo || 'scan';
   const backLabel = backTo==='history' ? '← History' : backTo==='home' ? '← Home' : 'New scan';
-  // Update back button
   const bb = document.querySelector('#screen-results .back-btn');
   if(bb){ bb.textContent=''; bb.innerHTML=`<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--t2);fill:none;stroke-width:2;stroke-linecap:round;"><polyline points="15 18 9 12 15 6"/></svg>${backLabel}`; bb.onclick=()=>showScreen(backTo); }
-  const g = r.goalDecision||{};
-  const sc=r.overallScore||0;
-  const scCol=sc>=8?'var(--green)':sc>=6?'var(--amber)':sc>=4?'var(--red)':'#ff5555';
-  const phCol=g.phase==='bulk'?'var(--green)':g.phase==='cut'?'var(--red)':'var(--blue)';
-  const phBg=g.phase==='bulk'?'var(--green2)':g.phase==='cut'?'var(--red2)':'var(--blue2)';
-  const phName=g.phase==='bulk'?'BULK 🍗':g.phase==='cut'?'CUT 🔥':'RECOMP ⚡';
-  const cardBg=sc>=7?'var(--red)':sc>=5?'#1c1500':'#180a0a';
-  const cardBorder=sc>=7?'transparent':sc>=5?'#f59e0b44':'#ff333344';
-  const tc=sc>=7?'#fff':'var(--t1)';
-  const mc=sc>=7?'rgba(255,255,255,0.6)':'var(--t3)';
 
-  // Store result globally for override buttons
+  const sc = r.overallScore||0;
+  const phase = r.phase || (r.goalDecision&&r.goalDecision.phase) || 'recomp';
+  const scCol = sc>=8?'var(--green)':sc>=6?'var(--amber)':sc>=4?'var(--red)':'#ff5555';
+  const phCol = phase==='bulk'?'var(--green)':phase==='cut'?'var(--red)':'var(--blue)';
+  const phBg  = phase==='bulk'?'var(--green2)':phase==='cut'?'var(--red2)':'var(--blue2)';
+  const phName= phase==='bulk'?'BULK 🍗':phase==='cut'?'CUT 🔥':'RECOMP ⚡';
+  const cardBg= sc>=7?'#0d1a0d':sc>=5?'#1c1500':'#180a0a';
+  const cardBorder= sc>=7?'rgba(34,197,94,0.25)':sc>=5?'#f59e0b44':'#ff333344';
+  const tc = sc>=7?'#fff':'var(--t1)';
+  const mc = sc>=7?'rgba(255,255,255,0.6)':'var(--t3)';
+
   window._currentScanResult = r;
 
-  // Update home — always set, even if 0
-  document.getElementById('h-score').textContent=sc.toFixed(1);
-  document.getElementById('h-score').style.color=scCol;
-  document.getElementById('h-score-sub').textContent=r.scoreLabel||'';
-  document.getElementById('h-goal').textContent=phName;
-  document.getElementById('h-goal').style.color=phCol;
-  document.getElementById('h-goal-sub').textContent=g.duration||'';
-  const calsEl=document.getElementById('h-cals'); const protEl=document.getElementById('h-protein');
-  if(calsEl) calsEl.textContent = g.calories ? g.calories.toLocaleString() : '—';
-  if(protEl) protEl.textContent = g.protein ? g.protein+'g' : '—';
-  // Body fat on home
+  // Update home stats
+  document.getElementById('h-score').textContent = sc.toFixed(1);
+  document.getElementById('h-score').style.color = scCol;
+  document.getElementById('h-score-sub').textContent = r.scoreLabel||'';
+  document.getElementById('h-goal').textContent = phName;
+  document.getElementById('h-goal').style.color = phCol;
+  document.getElementById('h-goal-sub').textContent = '';
   const bfEl=document.getElementById('h-bf'); const bfSubEl=document.getElementById('h-bf-sub');
   if(bfEl && r.bodyFatEstimate) {
     bfEl.textContent = r.bodyFatEstimate;
-    const bfCol = r.bodyFatCategory==='high'?'var(--red)':r.bodyFatCategory==='low'?'var(--green)':'var(--amber)';
-    bfEl.style.color = bfCol;
+    bfEl.style.color = r.bodyFatCategory==='high'?'var(--red)':r.bodyFatCategory==='low'?'var(--green)':'var(--amber)';
     if(bfSubEl) bfSubEl.textContent = r.bodyFatCategory==='high'?'High fat':r.bodyFatCategory==='low'?'Lean':'Moderate';
   }
 
-  const mHTML=(r.muscles||[]).map(m=>{ const bc=m.status==='elite'?'#4ade80':m.status==='good'?'var(--green)':m.status==='fair'?'var(--amber)':'var(--red)'; return `<div class="mrow"><div class="mrow-top"><div class="mname">${m.name}</div><div style="font-size:11px;color:var(--t3);width:24px;text-align:right;">${m.score}</div><div class="mbar-bg"><div class="mbar" style="width:${m.score}%;background:${bc};"></div></div><div class="mbadge ${m.status}">${m.status}</div></div>${m.note?`<div style="font-size:11px;color:var(--t3);margin-top:2px;">${m.note}</div>`:''}</div>`; }).join('');
+  // Muscle grid (Umax style 2-col cards)
+  const badgeLabel = {weak:'⚠ WEAK', fair:'FAIR', good:'🔥 GOOD', elite:'⭐ ELITE'};
+  const muscleGridHTML = `<div class="muscle-grid">${(r.muscles||[]).map(m=>`
+    <div class="muscle-card ${m.status}">
+      <div class="mc-name">${m.name}</div>
+      <div class="mc-score ${m.status}">${m.score}</div>
+      <div class="mc-badge ${m.status}">${badgeLabel[m.status]||m.status.toUpperCase()}</div>
+      ${m.note?`<div class="mc-note">${m.note}</div>`:''}
+    </div>`).join('')}</div>`;
 
-  const mealHTML=(r.mealPlan||[]).map(m=>{ const foods=(m.foods||[]).join(', '); return `<div class="meal-item"><div class="meal-icon">${m.meal.includes('Break')?'🌅':m.meal.includes('Lunch')?'☀️':m.meal.includes('Dinner')?'🌙':m.meal.includes('Pre')?'⚡':m.meal.includes('Post')?'💪':'🍎'}</div><div style="flex:1;"><div class="meal-name">${m.meal} <span style="font-size:11px;color:var(--t3);">${m.time||''}</span></div><div class="meal-foods">${foods}</div></div><div style="text-align:right;flex-shrink:0;"><div class="meal-p">${m.protein}g</div><div class="meal-k">${m.calories} kcal</div></div></div>`; }).join('');
+  // Tips section
+  const tipsHTML = (r.tips||[]).map(t=>`
+    <div class="tip-card">
+      <div class="tip-muscle-pill">${t.muscle}</div>
+      <div class="tip-text">${t.tip}</div>
+    </div>`).join('');
 
-  // WORKOUT — beautiful day tabs + exercise cards
-  let workoutHTML = '';
-  if(r.workoutPlan && r.workoutPlan.length) {
-    const wDays = r.workoutPlan;
-    const allDays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    // Build tab row
-    const tabsHTML = wDays.map((wd,i) => {
-      const shortDay = wd.day.substring(0,3);
-      const focusShort = wd.focus.split('—')[0].split('–')[0].trim().split(' ').slice(0,1).join('');
-      const isRest = wd.focus.toLowerCase().includes('rest');
-      return `<div class="wtab ${i===0?'wt-active':''} ${isRest?'wt-rest':''}" onclick="switchWorkoutDay(${i})" id="wtab-${i}">
-        <div class="wtab-day">${shortDay}</div>
-        <div class="wtab-label">${focusShort}</div>
-        <div class="wtab-dot"></div>
-      </div>`;
-    }).join('');
-
-    // Build each day panel
-    const panelsHTML = wDays.map((wd,di) => {
-      const isRest = wd.focus.toLowerCase().includes('rest');
-      const exCount = (wd.exercises||[]).length;
-      const exHTML = isRest ? `
-        <div style="padding:28px 18px;text-align:center;">
-          <div style="font-size:32px;margin-bottom:8px;">😴</div>
-          <div style="font-size:15px;font-weight:500;margin-bottom:6px;">Rest day</div>
-          <div style="font-size:13px;color:var(--t3);line-height:1.6;">Recovery is part of the programme. Sleep well, eat your protein, stretch if needed.</div>
-        </div>` :
-        (wd.exercises||[]).map((ex,ei) => `
-          <div class="ex-card">
-            <div class="ex-card-left">
-              <div class="ex-num-badge">${ei+1}</div>
-            </div>
-            <div class="ex-card-body">
-              <div class="ex-card-name">${ex.name}</div>
-              <div class="ex-card-note">${ex.note||''}</div>
-            </div>
-            <div class="ex-card-right">
-              <div class="ex-sets-pill">${ex.sets}</div>
-              ${ex.rest?`<div class="ex-rest-pill">${ex.rest}</div>`:''}
-            </div>
-          </div>`).join('');
-
-      return `<div class="wday-panel ${di===0?'wp-active':''}" id="wpanel-${di}">
-        <div class="wday-header">
-          <div>
-            <div class="wday-header-day">${wd.day}</div>
-            <div class="wday-header-focus">${wd.focus}</div>
-          </div>
-          ${wd.target?`<div class="wday-target-tag">${wd.target}</div>`:''}
-        </div>
-        ${!isRest?`<div class="wday-meta">
-          <span class="wday-meta-pill">
-            <svg width="11" height="11" viewBox="0 0 24 24" style="stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            ${exCount} exercises
-          </span>
-        </div>`:''}
-        ${exHTML}
-      </div>`;
-    }).join('');
-
-    const splitCard = r.workoutSplit ? `
-      <div class="rcard" style="background:linear-gradient(135deg,rgba(255,43,43,0.06),rgba(0,0,0,0));border-color:rgba(255,43,43,0.2);">
-        <div class="rcard-t">Optimal split for you</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:900;color:var(--t1);">${r.workoutSplit.name}</div>
-          <div style="padding:6px 14px;border-radius:20px;background:rgba(255,43,43,0.12);border:1px solid rgba(255,43,43,0.25);font-size:13px;font-weight:700;color:var(--red);">${r.workoutSplit.frequency}x / week</div>
-        </div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;margin-bottom:10px;">${r.workoutSplit.reasoning}</div>
-        ${r.workoutSplit.structure?`<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.7;">${r.workoutSplit.structure}</div>`:''}
-      </div>` : '';
-
-    workoutHTML = splitCard + `
-      <div class="rcard" style="padding:0;overflow:hidden;">
-        <div style="padding:14px 20px 12px;border-bottom:1px solid var(--b1);">
-          <div class="rcard-t" style="margin-bottom:0;">Your workout programme</div>
-        </div>
-        <div class="wtabs-scroll" style="padding:12px 20px 0;">${tabsHTML}</div>
-        <div class="wpanels">${panelsHTML}</div>
-      </div>`;
-  }
-
-  const supHTML=(r.supplements||[]).map(s=>{ const evClass=s.evidence==='high'?'ev-high':'ev-mod'; return `<div class="sup-item"><div class="sup-icon">${s.name.toLowerCase().includes('creatine')?'💊':s.name.toLowerCase().includes('protein')?'🥛':'☕'}</div><div><div class="sup-t">${s.name}</div><div class="sup-d">${s.dose} · ${s.timing}. ${s.note}</div><div class="sup-ev ${evClass}">${s.evidence} evidence</div></div></div>`; }).join('');
-
-  const weakTags=(r.weakSpots||[]).map(w=>`<span style="display:inline-block;padding:5px 12px;border-radius:8px;background:var(--red2);color:var(--red);font-size:12px;font-weight:500;margin:3px 3px 0 0;">${w}</span>`).join('');
-  const strHTML=(r.strengths||[]).map(s=>`<div style="padding:6px 0;border-bottom:1px solid var(--b1);font-size:13px;color:var(--t2);display:flex;gap:8px;"><span style="color:var(--green);flex-shrink:0;">✓</span>${s}</div>`).join('');
+  // Strengths + weak spots
+  const weakTags = (r.weakSpots||[]).map(w=>`<span style="display:inline-block;padding:5px 12px;border-radius:8px;background:var(--red2);color:var(--red);font-size:12px;font-weight:500;margin:3px 3px 0 0;">${w}</span>`).join('');
+  const strTags  = (r.strengths||[]).map(s=>`<span style="display:inline-block;padding:5px 12px;border-radius:8px;background:rgba(34,197,94,0.1);color:var(--green);font-size:12px;font-weight:500;margin:3px 3px 0 0;">✓ ${s}</span>`).join('');
 
   document.getElementById('results-content').innerHTML = `
   <div class="fade-in">
 
-    <!-- BODY STATS HERO — body fat prominent at top -->
+    <!-- SCORE HERO -->
     <div style="background:${cardBg};border:1px solid ${cardBorder};border-radius:18px;padding:20px;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
-        <div class="score-big" style="color:${scCol};">${sc.toFixed(1)}</div>
+        <div class="score-big" style="color:${scCol};text-shadow:0 0 30px ${scCol}66;">${sc.toFixed(1)}</div>
         <div>
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:${mc};margin-bottom:3px;">${r.scoreLabel} · ${r.bodyType||''}</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:${mc};margin-bottom:3px;">${r.scoreLabel||''} · ${r.bodyType||''}</div>
           <div style="font-size:12px;color:${mc};line-height:1.5;">${(r.summary||'').split('.')[0]}.</div>
           <div class="phase-badge" style="background:${phBg};color:${phCol};border:1px solid ${phCol}33;margin-top:6px;">${phName}</div>
         </div>
       </div>
-      <!-- BODY STATS GRID -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
         <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.06);">
           <div style="font-size:10px;color:${mc};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Body fat</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:${r.bodyFatCategory==='high'?'var(--red)':r.bodyFatCategory==='low'?'var(--green)':'var(--amber)'};">${r.bodyFatEstimate||'—'}</div>
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:${r.bodyFatCategory==='high'?'var(--red)':r.bodyFatCategory==='low'?'var(--green)':'var(--amber)'};">${r.bodyFatEstimate||'—'}</div>
           <div style="font-size:10px;color:${mc};margin-top:2px;">${r.bodyFatCategory==='high'?'High':r.bodyFatCategory==='low'?'Lean':'Moderate'}</div>
         </div>
         <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.06);">
-          <div style="font-size:10px;color:${mc};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Est. muscle</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:${tc};">${r.muscleMassEstimate||'—'}</div>
-          <div style="font-size:10px;color:${mc};margin-top:2px;">kg lean mass</div>
+          <div style="font-size:10px;color:${mc};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Muscle mass</div>
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:${tc};">${r.muscleMassEstimate||'—'}</div>
+          <div style="font-size:10px;color:${mc};margin-top:2px;">kg lean</div>
         </div>
         <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.06);">
-          <div style="font-size:10px;color:${mc};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">BMI est.</div>
-          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:${tc};">${r.bmiEstimate||'—'}</div>
+          <div style="font-size:10px;color:${mc};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">BMI</div>
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:${tc};">${r.bmiEstimate||'—'}</div>
           <div style="font-size:10px;color:${mc};margin-top:2px;">${r.bmiCategory||''}</div>
         </div>
       </div>
@@ -1167,59 +1045,41 @@ function renderResults(r, angles, backTo) {
     <!-- HONEST TALK -->
     ${r.honestTalk?`<div class="honest-box"><div class="hb-title"><svg width="14" height="14" viewBox="0 0 24 24" style="stroke:var(--red);fill:none;stroke-width:2;stroke-linecap:round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Honest PT talk</div><div class="hb-body">${r.honestTalk}</div></div>`:''}
 
-    <!-- GOAL DECISION — Option C: AI recommends, user can override -->
+    <!-- PHASE -->
     <div class="rcard" id="goal-decision-card" style="background:${phBg};border-color:${phCol}33;">
       <div class="rcard-t">AI recommendation</div>
       <div style="font-family:'Syne',sans-serif;font-size:30px;font-weight:900;color:${phCol};margin-bottom:6px;">${phName}</div>
-      <div style="font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:12px;">${g.reasoning||''}</div>
-
-      <!-- If AI disagrees with user's chosen goal, show honest warning -->
-      ${g.override?`<div style="padding:10px 12px;background:rgba(245,158,11,0.08);border-radius:10px;border-left:2px solid var(--amber);margin-bottom:12px;">
-        <div style="font-size:12px;color:var(--amber);font-weight:500;margin-bottom:3px;">⚠ Honest PT take</div>
-        <div style="font-size:12px;color:var(--t2);line-height:1.5;">${g.override}</div>
-      </div>`:''}
-
-      <!-- Override buttons — always visible -->
+      <div style="font-size:13px;color:var(--t2);line-height:1.65;margin-bottom:12px;">${r.phaseReason||''}</div>
       <div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-weight:500;">Not what you want? Override →</div>
       <div style="display:flex;gap:7px;">
-        <button onclick="overrideGoal('bulk')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${g.phase==='bulk'?'var(--green)':'var(--b2)'};background:${g.phase==='bulk'?'var(--green2)':'transparent'};color:${g.phase==='bulk'?'var(--green)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🍗 Bulk</button>
-        <button onclick="overrideGoal('cut')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${g.phase==='cut'?'var(--red)':'var(--b2)'};background:${g.phase==='cut'?'var(--red2)':'transparent'};color:${g.phase==='cut'?'var(--red)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🔥 Cut</button>
-        <button onclick="overrideGoal('recomp')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${g.phase==='recomp'?'var(--blue)':'var(--b2)'};background:${g.phase==='recomp'?'var(--blue2)':'transparent'};color:${g.phase==='recomp'?'var(--blue)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">⚡ Recomp</button>
+        <button onclick="overrideGoal('bulk')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${phase==='bulk'?'var(--green)':'var(--b2)'};background:${phase==='bulk'?'var(--green2)':'transparent'};color:${phase==='bulk'?'var(--green)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🍗 Bulk</button>
+        <button onclick="overrideGoal('cut')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${phase==='cut'?'var(--red)':'var(--b2)'};background:${phase==='cut'?'var(--red2)':'transparent'};color:${phase==='cut'?'var(--red)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">🔥 Cut</button>
+        <button onclick="overrideGoal('recomp')" style="flex:1;padding:10px 6px;border-radius:10px;border:1px solid ${phase==='recomp'?'var(--blue)':'var(--b2)'};background:${phase==='recomp'?'var(--blue2)':'transparent'};color:${phase==='recomp'?'var(--blue)':'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">⚡ Recomp</button>
       </div>
     </div>
 
-    <!-- MACROS -->
-    <div class="rcard">
-      <div class="rcard-t">Daily targets</div>
-      <div class="macro-row">
-        <div class="macro-card"><div class="mc-v" style="color:var(--red);">${(g.calories||0).toLocaleString()}</div><div class="mc-l">Calories</div><div class="mc-s">${g.calorieGuidance||''}</div></div>
-        <div class="macro-card"><div class="mc-v" style="color:var(--green);">${g.protein||0}g</div><div class="mc-l">Protein</div><div class="mc-s">${user.weight?((g.protein||0)/user.weight).toFixed(1)+'g/kg':''}</div></div>
-        <div class="macro-card"><div class="mc-v" style="color:var(--amber);">${g.carbs||0}g</div><div class="mc-l">Carbs</div><div class="mc-s">${g.fat||0}g fat</div></div>
-      </div>
-      ${g.adjustRule?`<div style="font-size:12px;color:var(--t3);padding-top:4px;line-height:1.5;border-top:1px solid var(--b1);padding-top:10px;">${g.adjustRule}</div>`:''}
-    </div>
-
-    <!-- MUSCLE BREAKDOWN -->
+    <!-- MUSCLE BREAKDOWN (Umax style) -->
     <div class="rcard">
       <div class="rcard-t">Muscle breakdown</div>
-      ${mHTML||'<div style="color:var(--t3);font-size:13px;">Not enough detail visible in photo</div>'}
+      ${muscleGridHTML||'<div style="color:var(--t3);font-size:13px;">Not enough detail visible in photo</div>'}
     </div>
 
-    <!-- WEAK SPOTS + STRENGTHS -->
+    <!-- STRENGTHS + WEAK SPOTS -->
     <div class="rcard">
-      <div class="rcard-t">Weak spots</div>
-      <div style="margin-bottom:${strHTML?'14px':'0'}">${weakTags||'<span style="color:var(--t3);font-size:13px;">None detected</span>'}</div>
-      ${strHTML?`<div class="rcard-t" style="margin-top:12px;">Strengths</div>${strHTML}`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <div class="rcard-t">Strengths</div>
+          <div>${strTags||'<span style="color:var(--t3);font-size:12px;">Scan more angles</span>'}</div>
+        </div>
+        <div>
+          <div class="rcard-t">Weak spots</div>
+          <div>${weakTags||'<span style="color:var(--t3);font-size:12px;">None detected</span>'}</div>
+        </div>
+      </div>
     </div>
 
-    <!-- MEAL PLAN -->
-    ${mealHTML?`<div class="rcard"><div class="rcard-t">Your meal plan</div>${mealHTML}</div>`:''}
-
-    <!-- WORKOUT -->
-    ${workoutHTML}
-
-    <!-- SUPPLEMENTS -->
-    ${supHTML?`<div class="rcard"><div class="rcard-t">Supplement advice</div>${supHTML}</div>`:''}
+    <!-- HOW TO IMPROVE -->
+    ${tipsHTML?`<div class="rcard"><div class="rcard-t">How to improve</div>${tipsHTML}</div>`:''}
 
     <!-- FULL ASSESSMENT -->
     <div class="rcard">
@@ -1239,8 +1099,7 @@ let pendingOverridePhase = null;
 function overrideGoal(phase) {
   const r = window._currentScanResult;
   if(!r) return;
-  const g = r.goalDecision || {};
-  const currentPhase = g.phase;
+  const currentPhase = r.phase || 'recomp';
 
   // Tapping the current AI recommendation — no override needed
   if(phase === currentPhase) return;
@@ -1398,9 +1257,8 @@ async function runScanWithGoal(forcedPhase) {
   let li = 0;
   const LMSGS2 = [
     'Re-analysing physique for ' + forcedPhase + '...',
-    'Building ' + forcedPhase + ' meal plan...',
-    'Designing workout for ' + forcedPhase + '...',
-    'Calculating new calorie targets...',
+    'Scoring muscles for ' + forcedPhase + ' phase...',
+    'Building improvement tips...',
     'Almost done...'
   ];
   const lt = setInterval(() => {
@@ -1409,21 +1267,27 @@ async function runScanWithGoal(forcedPhase) {
     if(el) el.textContent = LMSGS2[li];
   }, 2000);
 
-  blocks.push({ type:'text', text:`You are an elite physique analyst and personal trainer. ${userCtx}
-The user has CHOSEN to ${phaseDesc}. This is their decision — respect it and build the best possible plan for this goal.
-Do NOT recommend a different phase. Build everything around ${forcedPhase.toUpperCase()}.
+  blocks.push({ type:'text', text:`You are an elite physique analyst and sports scientist. ${userCtx}
+The user has CHOSEN the ${forcedPhase.toUpperCase()} phase. Respect this decision. Re-analyse their physique with this goal in mind.
 
-CRITICAL SCORING — thickness/mass = score, NOT leanness. Lean but flat abs = "fair" not "good".
+RULES:
+1. SCORING — overall score = muscle thickness + mass, NOT leanness. 1-10 with 1 decimal. Lean but flat = low score.
+2. MUSCLE SCORES — 0-100. weak=under 40, fair=40-65, good=65-80, elite=80+
+3. PHASE is LOCKED to "${forcedPhase}" — do not change it.
+4. phaseReason — 2 sentences why ${forcedPhase} makes sense for their body specifically.
+5. MUSCLE NOTES — 1 honest sentence per muscle.
+6. TIPS — for each weak/fair muscle, give exact exercise, sets, and frequency.
+7. BE HONEST — do not flatter.
 
 Respond ONLY raw JSON:
-{"overallScore":<1.0-10.0>,"scoreLabel":"<Beginner|Developing|Intermediate|Advanced|Elite>","bodyFatEstimate":"<e.g. 12-15%>","bodyFatCategory":"<low|moderate|high>","muscleMassEstimate":"<e.g. 62.5 — single number kg using weight×(1-bf/100)>","bmiEstimate":"<single number e.g. 22.4>","bmiCategory":"<Underweight|Normal|Overweight>","bodyType":"<type>","summary":"<3 honest sentences>","honestTalk":"<1-2 sentences of honest PT advice specific to doing a ${forcedPhase} with their physique>","goalDecision":{"phase":"${forcedPhase}","reasoning":"<2-3 sentences why this ${forcedPhase} plan is built for them specifically>","override":"","duration":"<weeks>","calories":<number>,"protein":<grams>,"carbs":<grams>,"fat":<grams>,"calorieGuidance":"<e.g. +300 above maintenance>","adjustRule":"<how to adjust weekly>"},"muscles":[{"name":"<group>","score":<0-100>,"status":"<weak|fair|good|elite>","note":"<honest>"}],"weakSpots":["<muscle>"],"strengths":["<real strength>"],"mealPlan":[{"meal":"<name>","time":"<time>","foods":["<food + amount>"],"protein":<g>,"calories":<kcal>}],"workoutPlan":[{"day":"<Mon|Tue|Wed|Thu|Fri|Sat|Sun>","focus":"<focus>","target":"<weak spot>","exercises":[{"name":"<exercise>","sets":"<sets>","rest":"<rest>","note":"<why>"}]}],"supplements":[{"name":"<supp>","dose":"<dose>","timing":"<when>","evidence":"<high|moderate|low>","note":"<note>"}],"weeklyAdjust":"<weekly adjustment rule>"}
-6-8 muscles, 4-5 meals, 4-5 workout days, 2-3 supplements. Concise. Complete valid JSON.` });
+{"overallScore":<1.0-10.0>,"scoreLabel":"<Beginner|Developing|Intermediate|Advanced|Elite>","bodyFatEstimate":"<e.g. 12-14%>","bodyFatCategory":"<low|moderate|high>","muscleMassEstimate":<kg number>,"bmiEstimate":<number>,"bmiCategory":"<Underweight|Normal|Overweight>","bodyType":"<type>","summary":"<3 honest sentences>","honestTalk":"<1-2 sentences brutal honest PT advice>","phase":"${forcedPhase}","phaseReason":"<2 sentences>","muscles":[{"name":"<group>","score":<0-100>,"status":"<weak|fair|good|elite>","note":"<honest 1 sentence>"}],"strengths":["<2-3 real strengths>"],"weakSpots":["<2-3 real weak areas>"],"tips":[{"muscle":"<name>","tip":"<exact exercise, sets, frequency>"}]}
+6-8 muscles, 3-5 tips. Complete valid JSON.` });
 
   try {
     const resp = await fetch('/api/scan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4000, messages:[{ role:'user', content:blocks }] })
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:2000, messages:[{ role:'user', content:blocks }] })
     });
     clearInterval(lt);
     const data = await resp.json();
@@ -1459,16 +1323,13 @@ Respond ONLY raw JSON:
 }
 function saveHistory(r) {
   const fp=photos['Front']||photos[Object.keys(photos)[0]];
-  const g=r.goalDecision||{};
   const entry = {
     date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'}),
     angles:Object.keys(photos).join('+'),
     score:r.overallScore,
     photo:fp?fp.dataUrl:null,
-    phase:g.phase||'',
+    phase:r.phase||'',
     label:r.scoreLabel||'',
-    calories:g.calories||0,
-    protein:g.protein||0,
     bodyFat:r.bodyFatEstimate||'',
     bodyFatCategory:r.bodyFatCategory||'',
     fullResult: r
@@ -1563,12 +1424,6 @@ function updateHomeStats() {
       if(bfEl){ bfEl.textContent=l.bodyFat; bfEl.style.color=l.bodyFatCategory==='high'?'var(--red)':l.bodyFatCategory==='low'?'var(--green)':'var(--amber)'; }
       const bfSubEl=document.getElementById('h-bf-sub');
       if(bfSubEl) bfSubEl.textContent=l.bodyFatCategory==='high'?'High fat':l.bodyFatCategory==='low'?'Lean':'Moderate';
-    }
-    // Also try from fullResult if not in entry
-    if(!l.calories && l.fullResult && l.fullResult.goalDecision) {
-      const g = l.fullResult.goalDecision;
-      if(g.calories) document.getElementById('h-cals').textContent=g.calories.toLocaleString();
-      if(g.protein) document.getElementById('h-protein').textContent=g.protein+'g';
     }
   }
 }
