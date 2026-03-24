@@ -1346,7 +1346,7 @@ function renderHistory() {
   el.innerHTML=history.map((e,i)=>`
     <div class="hcard" onclick="openHistoryScan(${i})" style="position:relative;">
       ${e.photo?`<img src="${e.photo}" alt="scan"/>`:`<div style="width:100%;height:120px;background:var(--bg3);display:flex;align-items:center;justify-content:center;"><svg width="28" height="28" viewBox="0 0 24 24" style="stroke:var(--t3);fill:none;stroke-width:1.5;stroke-linecap:round;"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>`}
-      <div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);border-radius:8px;padding:3px 8px;font-size:11px;color:rgba(255,255,255,0.7);backdrop-filter:blur(8px);">Tap to view</div>
+      <div onclick="event.stopPropagation();deleteScan(${i})" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.75);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.12);"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
       <div class="hcard-body">
         <div class="hcard-score" style="color:${e.score>=7?'var(--green)':e.score>=5?'var(--amber)':'var(--red)'}">${e.score?e.score.toFixed(1):'?'}</div>
         <div class="hcard-meta">${e.label||''}</div>
@@ -1354,6 +1354,12 @@ function renderHistory() {
         ${e.phase?`<div style="font-size:11px;font-weight:600;color:${phCol(e.phase)};margin-top:4px;">${e.phase.toUpperCase()}</div>`:''}
       </div>
     </div>`).join('');
+}
+function deleteScan(i) {
+  history.splice(i,1);
+  try{localStorage.setItem('il_v5',JSON.stringify(history));}catch(e){}
+  renderHistory();
+  renderHomeRecents();
 }
 function renderHomeRecents() {
   if(!history.length)return;
