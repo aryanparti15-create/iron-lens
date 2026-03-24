@@ -292,6 +292,12 @@ button:active{opacity:0.85;}
 #override-modal{cursor:pointer;}
 #override-modal > div{cursor:default;}
 
+/* ── PAYWALL ── */
+.paywall-wrap{position:relative;border-radius:16px;overflow:hidden;}
+.paywall-blur{filter:blur(7px);pointer-events:none;user-select:none;}
+.paywall-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(to bottom,rgba(10,10,10,0.3) 0%,rgba(10,10,10,0.97) 45%);padding:32px 24px;text-align:center;z-index:10;}
+.unlock-btn{width:100%;padding:16px;border-radius:14px;background:var(--red);border:none;color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;letter-spacing:0.3px;margin-top:16px;}
+
 /* ── MUSCLE GRID (Umax style) ── */
 .muscle-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .muscle-card{border-radius:14px;padding:14px 12px;position:relative;overflow:hidden;border:1px solid transparent;}
@@ -1058,13 +1064,7 @@ function renderResults(r, angles, backTo) {
       </div>
     </div>
 
-    <!-- MUSCLE BREAKDOWN (Umax style) -->
-    <div class="rcard">
-      <div class="rcard-t">Muscle breakdown</div>
-      ${muscleGridHTML||'<div style="color:var(--t3);font-size:13px;">Not enough detail visible in photo</div>'}
-    </div>
-
-    <!-- STRENGTHS + WEAK SPOTS -->
+    <!-- STRENGTHS + WEAK SPOTS (always visible as teaser) -->
     <div class="rcard">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
@@ -1078,20 +1078,89 @@ function renderResults(r, angles, backTo) {
       </div>
     </div>
 
-    <!-- HOW TO IMPROVE -->
-    ${tipsHTML?`<div class="rcard"><div class="rcard-t">How to improve</div>${tipsHTML}</div>`:''}
-
     <!-- FULL ASSESSMENT -->
     <div class="rcard">
       <div class="rcard-t">Full assessment</div>
       <div style="font-size:13px;color:var(--t2);line-height:1.7;">${r.summary||''}</div>
     </div>
 
+    ${!isPremium() ? `
+    <div class="paywall-wrap">
+      <div class="paywall-blur">
+        <div class="rcard" style="margin-bottom:10px;">
+          <div class="rcard-t">Muscle breakdown</div>
+          <div class="muscle-grid">
+            ${(r.muscles||[]).map(m=>`<div class="muscle-card ${m.status}"><div class="mc-name">${m.name}</div><div class="mc-score ${m.status}">${m.score}</div></div>`).join('')}
+          </div>
+        </div>
+        <div class="rcard">
+          <div class="rcard-t">How to improve</div>
+          ${(r.tips||[]).map(t=>`<div class="tip-card"><div class="tip-muscle-pill">${t.muscle}</div><div class="tip-text">${t.tip}</div></div>`).join('')}
+        </div>
+      </div>
+      <div class="paywall-overlay">
+        <div style="font-size:36px;margin-bottom:12px;">🔒</div>
+        <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:8px;">Your report is ready</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;max-width:260px;">See your full muscle breakdown, improvement tips & phase plan</div>
+        <button class="unlock-btn" onclick="startCheckout()">Unlock — £4.99/month</button>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:10px;">Cancel anytime</div>
+      </div>
+    </div>
+    ` : `
+    <div class="rcard">
+      <div class="rcard-t">Muscle breakdown</div>
+      <div class="muscle-grid">
+        ${(r.muscles||[]).map(m=>`<div class="muscle-card ${m.status}"><div class="mc-name">${m.name}</div><div class="mc-score ${m.status}">${m.score}</div><div class="mc-badge ${m.status}">${{weak:'⚠ WEAK',fair:'FAIR',good:'🔥 GOOD',elite:'⭐ ELITE'}[m.status]||m.status}</div><div class="mc-note">${m.note||''}</div></div>`).join('')}
+      </div>
+    </div>
+    <div class="rcard">
+      <div class="rcard-t">How to improve</div>
+      ${(r.tips||[]).map(t=>`<div class="tip-card"><div class="tip-muscle-pill">${t.muscle}</div><div class="tip-text">${t.tip}</div></div>`).join('')}
+    </div>
+    `}
+
     <button style="width:100%;padding:15px;border-radius:14px;background:var(--bg2);border:1px solid var(--b2);color:var(--t1);font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;" onclick="showScreen('scan')">+ New scan</button>
     <button style="width:100%;padding:13px;border-radius:12px;background:transparent;border:1px solid var(--b2);color:var(--t2);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="showScreen('home')">← Home</button>
 
   </div>`;
 }
+
+// ── PAYWALL ────────────────────────────────────────────
+function isPremium() {
+  return localStorage.getItem('il_premium') === 'true';
+}
+
+async function startCheckout() {
+  const uid = (typeof fbAuth !== 'undefined' && fbAuth.currentUser) ? fbAuth.currentUser.uid : 'anonymous';
+  try {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ uid })
+    });
+    const data = await res.json();
+    if(data.url) window.location.href = data.url;
+    else alert('Something went wrong, please try again.');
+  } catch(e) {
+    alert('Could not connect to payment server.');
+  }
+}
+
+// Handle return from Stripe
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('unlocked') === 'true') {
+    localStorage.setItem('il_premium', 'true');
+    history.replaceState({}, '', window.location.pathname);
+    setTimeout(() => {
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:12px 24px;border-radius:12px;font-weight:600;font-size:14px;z-index:9999;';
+      t.textContent = '✓ Unlocked! Full report available';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }, 500);
+  }
+})();
 
 // ── GOAL OVERRIDE ──────────────────────────────────────
 let pendingOverridePhase = null;
