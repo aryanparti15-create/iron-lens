@@ -964,6 +964,8 @@ function switchWorkoutDay(idx) {
 // ── RENDER ─────────────────────────────────────────────
 function renderResults(r, angles, backTo) {
   backTo = backTo || 'scan';
+  window._currentScanAngles = angles;
+  window._currentScanBack = backTo;
   const backLabel = backTo==='history' ? '← History' : backTo==='home' ? '← Home' : 'New scan';
   const bb = document.querySelector('#screen-results .back-btn');
   if(bb){ bb.textContent=''; bb.innerHTML=`<svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--t2);fill:none;stroke-width:2;stroke-linecap:round;"><polyline points="15 18 9 12 15 6"/></svg>${backLabel}`; bb.onclick=()=>showScreen(backTo); }
@@ -1130,20 +1132,16 @@ function isPremium() {
   return localStorage.getItem('il_premium') === 'true';
 }
 
-async function startCheckout() {
-  const uid = (typeof fbAuth !== 'undefined' && fbAuth.currentUser) ? fbAuth.currentUser.uid : 'anonymous';
-  try {
-    const res = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ uid })
-    });
-    const data = await res.json();
-    if(data.url) window.location.href = data.url;
-    else alert('Something went wrong, please try again.');
-  } catch(e) {
-    alert('Could not connect to payment server.');
-  }
+function startCheckout() {
+  // MOCK — replace with real payment later
+  localStorage.setItem('il_premium', 'true');
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:12px 24px;border-radius:12px;font-weight:600;font-size:14px;z-index:9999;';
+  t.textContent = '✓ Unlocked! Full report available';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+  // Re-render results with unlocked view
+  if(window._currentScanResult) renderResults(window._currentScanResult, window._currentScanAngles, window._currentScanBack);
 }
 
 // Handle return from Stripe
