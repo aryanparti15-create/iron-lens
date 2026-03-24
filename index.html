@@ -446,7 +446,7 @@ button:active{opacity:0.85;}
   <div class="topbar">
     <div class="logo">Iron<em>Lens</em></div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--red);" id="home-av">AK</div>
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--red);cursor:pointer;" id="home-av" onclick="signOut()">AK</div>
     </div>
   </div>
   <div class="scroll">
@@ -855,15 +855,76 @@ CRITICAL RULES:
 3. CALORIES — use Mifflin-St Jeor if stats provided: Male BMR=(10×kg)+(6.25×cm)-(5×age)+5, Female=(10×kg)+(6.25×cm)-(5×age)-161. Multiply by activity ${user.activity||1.375}. Bulk=+300, Cut=-400, Recomp=maintenance.
 4. PROTEIN — Bulk: 1.8g/kg. Cut: 2.6g/kg. Recomp: 2.0g/kg.
 5. MEAL PLAN — real foods, specific. Not vague. e.g. "200g chicken breast, 150g rice, broccoli"
-6. WORKOUT — target their specific weak spots. Real exercises, sets, reps.
+6. WORKOUT SPLIT — pick from this database of 11 evidence-based splits. CHOOSE based on level + goal + weak muscle scores:
+
+━━ OVERRIDE RULES (check these FIRST before picking split) ━━
+- If 5+ muscles score below 45 → ALWAYS Full Body 3x (Split 1) regardless of stated experience. Can't specialise when everything is underdeveloped. The whole body is the weak point.
+- If back score<45 AND 3+ other muscles also below 45 → Full Body 3x. Do NOT give a pull-day specialisation — build the foundation first.
+- If back score<45 but rest of body is intermediate/advanced → Upper/Lower + Weak Point Day (Split 10) with back as the dedicated day (rows, pulldowns, deadlifts, pullovers — 18-22 sets back that day).
+- If person is stated intermediate/advanced but photo shows beginner-level development (most muscles weak/fair) → treat as beginner for split purposes. Be honest about this.
+
+━━ SPLIT DATABASE ━━
+SPLIT 1 — Full Body 3x (Mon/Wed/Fri)
+→ When: beginner, fat loss, time-limited. Sets/muscle/week: 6-10. RIR: 2-4.
+→ Each session: squat + hinge + horizontal push + horizontal pull + core (A/B alternating days)
+
+SPLIT 2 — Upper/Lower 4x (Mon/Tue/Thu/Fri)
+→ When: intermediate, balanced physique, 4 days. Sets/muscle/week: 10-16. RIR: 1-3.
+→ Upper1 / Lower1 / rest / Upper2 / Lower2
+
+SPLIT 3 — PPL 5-day (Mon–Fri)
+→ When: intermediate-advanced, 5 days, more volume needed than UL. Sets/muscle/week: 12-18. RIR: 0-2.
+→ Push / Pull / Legs / Push / Pull (legs again Sat optional)
+
+SPLIT 4 — PPL 6-day (classic Push/Pull/Legs x2)
+→ When: advanced, 6 days, multiple lagging muscles. Sets/muscle/week: 14-20. RIR: 0-2.
+→ Push / Pull / Legs / Push / Pull / Legs
+
+SPLIT 5 — Chest+Shoulders+Tris / Back+Bis / Legs (repeated 2x = 6-day)
+→ When: chest score<55 AND shoulder score<55 (both need volume together). Sets/muscle/week: 12-16. RIR: 0-2.
+→ Day1: Chest+Shoulders+Tris / Day2: Back+Bis / Day3: Legs — x2 per week
+
+SPLIT 6 — SHOULDER SPECIALISATION 5-day ⭐ USE THIS if shoulder score<45
+→ Shoulders hit 3x/week. Structure: Push heavy (chest+shoulder compound) / Pull / Legs / Shoulders isolation day (laterals, rear delts, press variations, face pulls — 15-20 sets shoulders only) / Upper light
+→ Sets/shoulders/week: 18-22. RIR: 0-2 on isolation, 1-2 on compounds.
+
+SPLIT 7 — ARMS SPECIALISATION 5-day ⭐ USE THIS if biceps OR triceps score<45
+→ Arms hit 3x/week. Structure: Chest+Tris / Back+Bis / Legs / Push / Dedicated Arms day (curls, extensions, forearms, cable work — 16-20 sets arms)
+→ Sets/arms/week: 16-20. RIR: 0-1 on isolation sets.
+
+SPLIT 8 — Arnold Split 6-day (Chest+Back / Shoulders+Arms / Legs)
+→ When: advanced, wants antagonist pairing (chest+back pumped together = blood flow synergy). Sets/muscle/week: 14-18. RIR: 0-2.
+→ Chest+Back / Shoulders+Arms / Legs — repeated 2x
+
+SPLIT 9 — 5-Day Hybrid (Push/Pull/Legs/Upper/Lower)
+→ When: intermediate-advanced, 5 days, wants frequency + volume. Sets/muscle/week: 12-18. RIR: 0-2.
+→ Push / Pull / Legs / Upper heavy compounds / Lower heavy compounds
+
+SPLIT 10 — Upper/Lower + WEAK POINT DAY (5-day)
+→ When: ONE specific muscle scores<45 and needs extra frequency. Sets/muscle/week: 14-18. RIR: 0-2.
+→ Upper / Lower / [WEAK MUSCLE ONLY DAY — 100% dedicated, 16-20 sets that muscle] / Upper / Lower
+
+SPLIT 11 — Cut Optimised Full Body 3x + 2 cardio days
+→ When: goal=cut. Volume reduced 20% from baseline, intensity preserved. Sets/muscle/week: 6-10. RIR: 1-2.
+→ Full Body / Cardio (cycling preferred over running) / Full Body / Cardio / Full Body. Cardio ≥6hrs from leg sessions.
+
+━━ VOLUME RULES ━━
+- Weekly sets per muscle = primary hypertrophy driver (dose-response proven). Distribute across sessions — never cram all volume into 1 session.
+- Weak muscle (score<50): 10-16 weekly direct sets, hit 2-3x/week minimum.
+- Strong muscle (score>70): maintain 6-10 weekly sets.
+- IMBALANCE RULES: anterior delts dominate → add 6-10 sets lateral+rear delt work, cut front-delt pressing 2-4 sets. Back lags chest → pull:push ≥1:1. Quads dominate → add RDL+hip hinge. Asymmetry visible → unilateral work first, weaker side first. No V-taper → lat-biased pulls 2-3x/week.
+
+━━ EFFORT + PROGRESSION ━━
+- Intermediate/Advanced hypertrophy: sets should reach 0-2 RIR (last rep very hard, could barely do 1-2 more). Isolation exercises (curls, laterals) can go to true failure occasionally. Compounds (squat, bench, deadlift) NEVER absolute failure — form breaks, injury risk.
+- Progression rule on EVERY exercise: "When you can exceed top of rep range by 1-2 clean reps → add 2-10% load next session."
 7. BE HONEST — if someone wants to be shredded but has no muscle, tell them. That's what a real PT does.
 
 Respond ONLY raw JSON, no markdown:
-{"overallScore":<1.0-10.0>,"scoreLabel":"<Beginner|Developing|Intermediate|Advanced|Elite>","bodyFatEstimate":"<e.g. 12-15%>","bodyFatCategory":"<low|moderate|high>","muscleMassEstimate":"<e.g. 62.5 — single number kg using weight×(1-bf/100)>","bmiEstimate":"<single number e.g. 22.4>","bmiCategory":"<Underweight|Normal|Overweight>","bodyType":"<type>","summary":"<3 honest sentences>","honestTalk":"<1-2 sentences of brutal honest PT advice — what they REALLY need to hear>","goalDecision":{"phase":"<bulk|cut|recomp>","reasoning":"<2-3 sentences explaining WHY this goal suits their body + aesthetic goal>","override":"<if AI disagrees with their aesthetic choice, explain honestly why. Empty string if AI agrees>","duration":"<weeks>","calories":<number>,"protein":<grams>,"carbs":<grams>,"fat":<grams>,"calorieGuidance":"<e.g. +300 above maintenance>","adjustRule":"<how to adjust weekly>"},"muscles":[{"name":"<group>","score":<0-100>,"status":"<weak|fair|good|elite>","note":"<honest>"}],"weakSpots":["<muscle>"],"strengths":["<real strength>"],"mealPlan":[{"meal":"<Breakfast|Lunch|Dinner|Snack|Pre-workout|Post-workout>","time":"<e.g. 7am>","foods":["<specific food + amount>"],"protein":<g>,"calories":<kcal>}],"workoutPlan":[{"day":"<Mon|Tue|Wed|Thu|Fri|Sat|Sun>","focus":"<e.g. Push — chest/shoulders/triceps>","target":"<weak spot this targets>","exercises":[{"name":"<exercise>","sets":"<e.g. 4x10>","rest":"<e.g. 90s>","note":"<why>"}]}],"supplements":[{"name":"<supplement>","dose":"<dose>","timing":"<when>","evidence":"<high|moderate|low>","note":"<why or why not>"}],"weeklyAdjust":"<how to adjust calories/training based on weekly progress>"}
+{"overallScore":<1.0-10.0>,"scoreLabel":"<Beginner|Developing|Intermediate|Advanced|Elite>","bodyFatEstimate":"<e.g. 12-15%>","bodyFatCategory":"<low|moderate|high>","muscleMassEstimate":"<e.g. 62.5 — single number kg using weight×(1-bf/100)>","bmiEstimate":"<single number e.g. 22.4>","bmiCategory":"<Underweight|Normal|Overweight>","bodyType":"<type>","summary":"<3 honest sentences>","honestTalk":"<1-2 sentences of brutal honest PT advice — what they REALLY need to hear>","goalDecision":{"phase":"<bulk|cut|recomp>","reasoning":"<2-3 sentences explaining WHY this goal suits their body + aesthetic goal>","override":"<if AI disagrees with their aesthetic choice, explain honestly why. Empty string if AI agrees>","duration":"<weeks>","calories":<number>,"protein":<grams>,"carbs":<grams>,"fat":<grams>,"calorieGuidance":"<e.g. +300 above maintenance>","adjustRule":"<how to adjust weekly>"},"muscles":[{"name":"<group>","score":<0-100>,"status":"<weak|fair|good|elite>","note":"<honest>"}],"weakSpots":["<muscle>"],"strengths":["<real strength>"],"workoutSplit":{"name":"<e.g. Push Pull Legs>","frequency":<days_per_week>,"reasoning":"<2 sentences — WHY this split is scientifically best for their specific stats, level and weak spots>","structure":"<e.g. Mon: Push · Tue: Pull · Wed: Legs · Thu: Rest · Fri: Upper · Sat: Lower · Sun: Rest>"},"mealPlan":[{"meal":"<Breakfast|Lunch|Dinner|Snack|Pre-workout|Post-workout>","time":"<e.g. 7am>","foods":["<specific food + amount>"],"protein":<g>,"calories":<kcal>}],"workoutPlan":[{"day":"<Mon|Tue|Wed|Thu|Fri|Sat|Sun>","focus":"<e.g. Push — chest/shoulders/triceps>","target":"<weak spot this targets>","exercises":[{"name":"<exercise>","sets":"<e.g. 4x10>","rest":"<e.g. 90s>","note":"<why this exercise for their weak spot>"}]}],"supplements":[{"name":"<supplement>","dose":"<dose>","timing":"<when>","evidence":"<high|moderate|low>","note":"<why or why not>"}],"weeklyAdjust":"<how to adjust calories/training based on weekly progress>"}
 Include 6-8 muscles, 4-5 meals, 4-5 workout days, 2-3 supplements. Concise values. Complete valid JSON.`});
 
   try {
-    const resp=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:blocks}]})});
+    const resp=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:5500,messages:[{role:'user',content:blocks}]})});
     clearInterval(lt);
     const data=await resp.json();
     if(data.error)throw new Error(data.error.message);
@@ -1044,7 +1105,18 @@ function renderResults(r, angles, backTo) {
       </div>`;
     }).join('');
 
-    workoutHTML = `
+    const splitCard = r.workoutSplit ? `
+      <div class="rcard" style="background:linear-gradient(135deg,rgba(255,43,43,0.06),rgba(0,0,0,0));border-color:rgba(255,43,43,0.2);">
+        <div class="rcard-t">Optimal split for you</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:900;color:var(--t1);">${r.workoutSplit.name}</div>
+          <div style="padding:6px 14px;border-radius:20px;background:rgba(255,43,43,0.12);border:1px solid rgba(255,43,43,0.25);font-size:13px;font-weight:700;color:var(--red);">${r.workoutSplit.frequency}x / week</div>
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.65;margin-bottom:10px;">${r.workoutSplit.reasoning}</div>
+        ${r.workoutSplit.structure?`<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.7;">${r.workoutSplit.structure}</div>`:''}
+      </div>` : '';
+
+    workoutHTML = splitCard + `
       <div class="rcard" style="padding:0;overflow:hidden;">
         <div style="padding:14px 20px 12px;border-bottom:1px solid var(--b1);">
           <div class="rcard-t" style="margin-bottom:0;">Your workout programme</div>
@@ -1584,6 +1656,14 @@ async function signInEmail() {
 function showAuthError(msg) {
   const el=document.getElementById('auth-error');
   el.textContent=msg; el.style.display='block';
+}
+
+function signOut() {
+  if(!confirm('Sign out?')) return;
+  fbAuth.signOut().then(()=>{
+    localStorage.removeItem('il_user');
+    showScreen('auth');
+  });
 }
 </script>
 </body>
