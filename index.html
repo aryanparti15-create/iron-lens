@@ -879,8 +879,10 @@ RULES:
 5. TIPS — for each weak/fair muscle give 1 specific actionable tip. Name the exact exercise, sets, frequency. e.g. "Add 4x12 cable lateral raises 3x/week — side delts are getting zero direct work".
 6. BE HONEST — brutal and direct like a real PT who cares. No sugarcoating.
 
+7. AGE PERCENTILE — based on their age and visible physique, estimate what percentile they are vs general population for their age group. Be generous but realistic — this motivates people. e.g. a decent 18yo might be top 15%, a jacked 21yo could be top 2%. Always phrase as a top X% number and a short hype label.
+
 Respond ONLY raw JSON, no markdown:
-{"overallScore":<1.0-10.0>,"scoreLabel":"<Beginner|Developing|Intermediate|Advanced|Elite>","bodyFatEstimate":"<e.g. 12-15%>","bodyFatCategory":"<low|moderate|high>","muscleMassEstimate":"<single number kg>","bmiEstimate":"<single number>","bmiCategory":"<Underweight|Normal|Overweight>","bodyType":"<e.g. Ectomorph|Mesomorph|Endomorph>","summary":"<3 honest sentences about overall physique>","honestTalk":"<1-2 sentences brutal honest PT advice — what they REALLY need to hear>","phase":"<bulk|cut|recomp>","phaseReason":"<2 sentences why this phase suits their body>","muscles":[{"name":"<group>","score":<0-100>,"status":"<weak|fair|good|elite>","note":"<honest specific 1 sentence>"}],"strengths":["<2-3 real strengths>"],"weakSpots":["<2-3 real weaknesses>"],"tips":[{"muscle":"<muscle name>","tip":"<specific actionable tip with exercise name, sets, frequency>"}]}
+{"overallScore":<1.0-10.0>,"scoreLabel":"<Beginner|Developing|Intermediate|Advanced|Elite>","bodyFatEstimate":"<e.g. 12-15%>","bodyFatCategory":"<low|moderate|high>","muscleMassEstimate":"<single number kg>","bmiEstimate":"<single number>","bmiCategory":"<Underweight|Normal|Overweight>","bodyType":"<e.g. Ectomorph|Mesomorph|Endomorph>","summary":"<3 honest sentences about overall physique>","honestTalk":"<1-2 sentences brutal honest PT advice — what they REALLY need to hear>","phase":"<bulk|cut|recomp>","phaseReason":"<2 sentences why this phase suits their body>","percentile":<1-99 number, top X% vs general population for their age>,"ageComparison":"<short hype label e.g. 'Top 8% for 21-year-olds' or 'Better than 85% of 18-year-olds'>","muscles":[{"name":"<group>","score":<0-100>,"status":"<weak|fair|good|elite>","note":"<honest specific 1 sentence>"}],"strengths":["<2-3 real strengths>"],"weakSpots":["<2-3 real weaknesses>"],"tips":[{"muscle":"<muscle name>","tip":"<specific actionable tip with exercise name, sets, frequency>"}]}
 Include 6-8 muscles, 3-5 tips for weakest muscles. Complete valid JSON.`});
 
   try {
@@ -1031,6 +1033,13 @@ function renderResults(r, angles, backTo) {
           <div class="phase-badge" style="background:${phBg};color:${phCol};border:1px solid ${phCol}33;margin-top:6px;">${phName}</div>
         </div>
       </div>
+      ${r.ageComparison?`<div style="background:linear-gradient(135deg,rgba(255,43,43,0.12),rgba(255,43,43,0.04));border:1px solid rgba(255,43,43,0.2);border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+        <div style="font-size:22px;">🏆</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:#fff;">${r.ageComparison}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px;">vs general population</div>
+        </div>
+      </div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
         <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.06);">
           <div style="font-size:10px;color:${mc};text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;">Body fat</div>
@@ -1114,10 +1123,29 @@ function renderResults(r, angles, backTo) {
     </div>
     `}
 
+    <button onclick="shareResult()" style="width:100%;padding:15px;border-radius:14px;background:var(--red);border:none;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px;"><svg viewBox="0 0 24 24" width="18" height="18" style="stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share my result</button>
     <button style="width:100%;padding:15px;border-radius:14px;background:var(--bg2);border:1px solid var(--b2);color:var(--t1);font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;" onclick="showScreen('scan')">+ New scan</button>
     <button style="width:100%;padding:13px;border-radius:12px;background:transparent;border:1px solid var(--b2);color:var(--t2);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="showScreen('home')">← Home</button>
 
   </div>`;
+}
+
+// ── SHARE ──────────────────────────────────────────────
+function shareResult() {
+  const r = window._currentScanResult;
+  if(!r) return;
+  const text = `I just got rated on IronLens 💪\n\nScore: ${r.overallScore}/10 — ${r.scoreLabel}\n${r.ageComparison ? r.ageComparison + '\n' : ''}Body fat: ${r.bodyFatEstimate}\nPhase: ${(r.phase||'').toUpperCase()}\n\nRate your physique → iron-lens-livid.vercel.app`;
+  if(navigator.share) {
+    navigator.share({ title: 'IronLens Physique Score', text });
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:12px 24px;border-radius:12px;font-weight:600;font-size:14px;z-index:9999;';
+      t.textContent = '✓ Copied to clipboard!';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2000);
+    });
+  }
 }
 
 // ── PAYWALL ────────────────────────────────────────────
